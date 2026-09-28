@@ -8,38 +8,51 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Inclui a ponte de nuvem -->
-    <script src="config-nuvem.js"></script>
+    <!-- Biblioteca do Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        details summary::-webkit-details-marker { display: none; }
+        details[open] summary .seta-gaveta { transform: rotate(180deg); }
+        .seta-gaveta { transition: transform 0.3s ease; }
+    </style>
 </head>
 <body class="bg-gray-100 font-sans p-6">
     <div class="max-w-6xl mx-auto bg-white p-8 rounded-xl shadow-lg mb-8">
         <header class="flex flex-col md:flex-row justify-between items-center mb-8 border-b pb-4 gap-4">
             <div>
-                <h1 class="text-2xl font-bold text-blue-600">🛠️ Painel do Desenvolvedor & Nuvem</h1>
-                <p class="text-xs text-gray-500 mt-1">Gerencie múltiplos simulados, controle dados e sincronize globalmente.</p>
+                <h1 class="text-2xl font-bold text-blue-600">🛠️ Painel do Desenvolvedor & Nuvem Supabase</h1>
+                <p class="text-xs text-gray-500 mt-1">Gerencie múltiplos simulados e publique instantaneamente para os alunos.</p>
             </div>
             <div class="flex items-center space-x-3 flex-wrap gap-2">
-                <button onclick="abrirModalTRI()" class="bg-indigo-600 text-white px-3 py-2 rounded-lg font-semibold text-xs hover:bg-indigo-700 transition shadow">⚙️ Laboratório & Calibração TRI</button>
-                <button onclick="sincronizarComNuvemManual()" class="bg-emerald-600 text-white px-3 py-2 rounded-lg font-semibold text-xs hover:bg-emerald-700 transition shadow">☁️ Sincronizar Nuvem</button>
+                <button onclick="abrirModalTRI()" class="bg-indigo-600 text-white px-3 py-2 rounded-lg font-semibold text-xs hover:bg-indigo-700 transition shadow">⚙️ Laboratório TRI</button>
                 <button onclick="exportarBackupJSON()" class="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg font-semibold text-xs hover:bg-gray-300 transition">📥 Backup JSON</button>
                 <label class="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg font-semibold text-xs hover:bg-gray-300 transition cursor-pointer">
                     📤 Restaurar <input type="file" id="file-backup" accept=".json" onchange="importarBackupJSON(event)" class="hidden">
                 </label>
-                <a href="PAINEL DO ALUNO.html" target="_blank" class="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-blue-200 transition">🔗 Portal do Aluno</a>
+                <a href="index.html" target="_blank" class="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-blue-200 transition">🔗 Portal do Aluno</a>
             </div>
         </header>
 
-        <!-- SELETOR DINÂMICO DE SIMULADOS & GERENCIAMENTO -->
+        <!-- INDICADOR DISCRETO DE VERSÃO ATUAL NO PAINEL -->
+        <div class="bg-blue-50 border border-blue-200 p-3 rounded-xl mb-6 flex justify-between items-center text-xs">
+            <div class="flex items-center space-x-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                <span class="font-bold text-blue-900">Versão Ativa:</span>
+                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v3.5.0 (Acertos nas Caixinhas)</span>
+            </div>
+            <span id="dev-ultima-atualizacao" class="text-gray-500 text-[11px]">Última Sincronização: --</span>
+        </div>
+
+        <!-- SELETOR DINÂMICO DE SIMULADOS -->
         <div class="bg-blue-50 p-6 rounded-xl border border-blue-200 mb-6 shadow-inner flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="w-full md:w-auto flex-1">
                 <h3 class="font-bold text-blue-900 text-sm mb-1">🎯 Seleção e Gestão de Simulados</h3>
-                <p class="text-xs text-blue-600">Escolha a edição ativa ou adicione novas edições ao longo do ano.</p>
                 <div class="flex items-center space-x-2 mt-3">
                     <select id="select-edicao-simulado" onchange="mudarEdicaoSimulado()" class="px-4 py-2 border border-blue-300 rounded-lg font-bold text-blue-700 bg-white shadow-sm flex-1 md:w-72">
-                        <!-- Preenchido dinamicamente -->
+                        <!-- Preenchido via JS -->
                     </select>
-                    <button onclick="adicionarNovoSimulado()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-xs font-bold transition shadow" title="Adicionar Novo Simulado">➕ Novo</button>
-                    <button onclick="excluirSimuladoAtual()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-xs font-bold transition shadow" title="Excluir Simulado Selecionado">🗑️ Excluir</button>
+                    <button onclick="adicionarNovoSimulado()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-xs font-bold transition shadow">➕ Novo</button>
+                    <button onclick="excluirSimuladoAtual()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-xs font-bold transition shadow">🗑️ Excluir</button>
                 </div>
             </div>
             <div class="text-right">
@@ -47,7 +60,7 @@
             </div>
         </div>
 
-        <!-- PAINEL DE ESTATÍSTICAS GLOBAIS DA TURMA -->
+        <!-- ESTATÍSTICAS GLOBAIS -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div class="bg-gray-50 p-4 rounded-xl border shadow-sm">
                 <p class="text-gray-500 text-xs font-bold uppercase">Total Alunos</p>
@@ -72,7 +85,7 @@
             <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="font-bold text-gray-800 text-sm" id="titulo-up-1">📄 Resultados 1º Dia (XLSX)</h3>
-                    <button onclick="limparDadosDia(1)" class="text-red-500 hover:text-red-700 text-xs font-bold">Limpar 1º Dia</button>
+                    <button onclick="limparDadosDia(1)" class="text-red-500 hover:text-red-700 text-xs font-bold">Limpar</button>
                 </div>
                 <input type="file" id="file-1dia" accept=".xlsx" multiple class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-blue-600 file:text-white mb-2">
                 <span id="status-1dia" class="text-xs text-gray-400">Nenhum arquivo selecionado</span>
@@ -81,45 +94,58 @@
             <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="font-bold text-gray-800 text-sm" id="titulo-up-2">📄 Resultados 2º Dia (XLSX)</h3>
-                    <button onclick="limparDadosDia(2)" class="text-red-500 hover:text-red-700 text-xs font-bold">Limpar 2º Dia</button>
+                    <button onclick="limparDadosDia(2)" class="text-red-500 hover:text-red-700 text-xs font-bold">Limpar</button>
                 </div>
                 <input type="file" id="file-2dia" accept=".xlsx" multiple class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-green-600 file:text-white mb-2">
                 <span id="status-2dia" class="text-xs text-gray-400">Nenhum arquivo selecionado</span>
             </div>
         </div>
 
-        <!-- CONFIGURAÇÃO DE PESOS TRI -->
-        <div class="bg-indigo-50 p-6 rounded-xl border border-indigo-200 shadow-inner mb-8">
-            <div class="flex justify-between items-center mb-2">
-                <h3 class="text-lg font-bold text-indigo-900">⚙️ Multiplicadores Globais por Área (Base TRI)</h3>
-                <button onclick="abrirModalTRI()" class="text-xs font-bold text-indigo-700 hover:underline">Abrir Laboratório Avançado por Área ↗</button>
-            </div>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div><label class="block text-xs font-bold text-gray-700 mb-1">Linguagens</label><input type="number" id="peso-ling" step="0.1" value="1.0" onchange="salvarConfigTRI()" class="w-full px-3 py-1.5 border rounded text-sm"></div>
-                <div><label class="block text-xs font-bold text-gray-700 mb-1">Humanas</label><input type="number" id="peso-hum" step="0.1" value="1.0" onchange="salvarConfigTRI()" class="w-full px-3 py-1.5 border rounded text-sm"></div>
-                <div><label class="block text-xs font-bold text-gray-700 mb-1">Natureza</label><input type="number" id="peso-nat" step="0.1" value="1.0" onchange="salvarConfigTRI()" class="w-full px-3 py-1.5 border rounded text-sm"></div>
-                <div><label class="block text-xs font-bold text-gray-700 mb-1">Matemática</label><input type="number" id="peso-mat" step="0.1" value="1.0" onchange="salvarConfigTRI()" class="w-full px-3 py-1.5 border rounded text-sm"></div>
-            </div>
-        </div>
-
         <!-- BOTÕES DE AÇÃO -->
         <div class="flex flex-col md:flex-row justify-center items-center gap-4 mb-8">
-            <button onclick="salvarTudoNoSistema()" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-blue-700 transition text-sm">💾 Salvar e Sincronizar na Nuvem</button>
-            <button onclick="exportarRelatorioExcel()" class="bg-emerald-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-emerald-700 transition text-sm">📊 Exportar Notas (Excel)</button>
-            <p id="msg-sucesso" class="text-green-600 font-semibold text-sm hidden">✅ Salvo e sincronizado na nuvem com sucesso!</p>
+            <button onclick="publicarAutomaticoGitHub()" class="bg-emerald-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-emerald-700 transition text-sm flex items-center gap-2">🚀 Salvar e Publicar na Nuvem</button>
+            <p id="msg-sucesso" class="text-green-600 font-semibold text-sm hidden">✅ Salvo na nuvem com sucesso!</p>
         </div>
 
-        <!-- AUDITORIA & LISTA DE ALUNOS COM BUSCA E FILTROS -->
-        <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-inner">
-            <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3">
-                <h3 class="text-lg font-bold text-gray-700">📋 Lista de Alunos (Clique para inspecionar)</h3>
-                <div class="flex items-center space-x-2 w-full md:w-auto">
-                    <input type="text" id="filtro-nome" onkeyup="carregarAuditoria()" placeholder="🔍 Buscar aluno por nome..." class="px-3 py-1.5 border rounded text-xs bg-white shadow-sm flex-1 md:w-64">
-                    <select id="filtro-turma" onchange="carregarAuditoria()" class="px-3 py-1.5 border rounded text-xs bg-white shadow-sm font-semibold text-gray-700">
+        <!-- CENTRAL DE FILTROS E LISTA DE ALUNOS -->
+        <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-inner mb-6">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3 border-b pb-4">
+                <h3 class="text-lg font-bold text-gray-700">📋 Central de Alunos, Filtros & Exportação</h3>
+                <button onclick="exportarTabelaFiltradaXLSX()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow flex items-center gap-1.5">
+                    📊 Baixar Planilha XLSX Filtrada
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4 bg-white p-4 rounded-xl border shadow-sm">
+                <div>
+                    <label class="block text-[11px] font-bold text-gray-600 mb-1">🔍 Buscar Aluno</label>
+                    <input type="text" id="filtro-nome" onkeyup="carregarAuditoria()" placeholder="Nome do aluno..." class="w-full px-3 py-2 border rounded text-xs bg-gray-50 font-medium">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-gray-600 mb-1">🏫 Filtrar Turma</label>
+                    <select id="filtro-turma" onchange="carregarAuditoria()" class="w-full px-3 py-2 border rounded text-xs bg-gray-50 font-semibold text-gray-700">
                         <option value="TODAS">Todas as Turmas</option>
                     </select>
                 </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-gray-600 mb-1">📊 Ordenar por</label>
+                    <select id="ordenacao-tabela" onchange="carregarAuditoria()" class="w-full px-3 py-2 border rounded text-xs bg-gray-50 font-semibold text-gray-700">
+                        <option value="nome">Ordem Alfabética (A-Z)</option>
+                        <option value="media_desc">Média Geral (Maior para Menor)</option>
+                        <option value="media_asc">Média Geral (Menor para Maior)</option>
+                        <option value="chamada">Número de Chamada</option>
+                        <option value="mat">Maior Nota Matemática</option>
+                        <option value="nat">Maior Nota Natureza</option>
+                        <option value="hum">Maior Nota Humanas</option>
+                        <option value="ling">Maior Nota Linguagens</option>
+                        <option value="red">Maior Nota Redação</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button onclick="limparFiltrosTabela()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded text-xs font-bold transition">🔄 Limpar Filtros</button>
+                </div>
             </div>
+
             <div class="overflow-x-auto max-h-96">
                 <table class="min-w-full divide-y divide-gray-300 bg-white rounded-lg shadow-sm">
                     <thead class="bg-gray-100 sticky top-0">
@@ -127,17 +153,50 @@
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase">Chamada</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase">Turma</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase">Nome do Aluno</th>
-                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">1º Dia</th>
-                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">2º Dia</th>
-                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">Média Parcial</th>
+                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">Linguagens</th>
+                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">Humanas</th>
+                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">Natureza</th>
+                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">Matemática</th>
                             <th class="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">Redação</th>
+                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">Média Geral</th>
                         </tr>
                     </thead>
                     <tbody id="tabela-auditoria" class="divide-y divide-gray-200 text-xs">
-                        <tr><td colspan="7" class="px-4 py-4 text-center text-gray-400">Carregue as planilhas acima.</td></tr>
+                        <tr><td colspan="9" class="px-4 py-4 text-center text-gray-400">Carregue as planilhas acima.</td></tr>
                     </tbody>
                 </table>
             </div>
+        </div>
+
+        <!-- GAVETA: AUDITORIA DE BOLETINS & PDFS BAIXADOS -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+            <details class="group">
+                <summary class="flex justify-between items-center p-4 bg-gray-50 cursor-pointer font-bold text-gray-700 text-sm select-none">
+                    <span class="flex items-center gap-2">📂 Auditoria de Boletins & Relatórios PDF Baixados pelos Alunos</span>
+                    <span class="seta-gaveta text-lg font-mono">▼</span>
+                </summary>
+                <div class="p-4 border-t border-gray-200">
+                    <div class="flex justify-between items-center mb-3">
+                        <p class="text-xs text-gray-500">Histórico de acessos e downloads de boletins em PDF realizados pelos alunos no portal.</p>
+                        <button onclick="limparLogAuditoriaPDF()" class="bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1.5 rounded text-xs font-bold transition">🗑️ Limpar Histórico</button>
+                    </div>
+                    <div class="overflow-x-auto max-h-60 border rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-200 text-xs">
+                            <thead class="bg-gray-100 sticky top-0">
+                                <tr class="text-left text-gray-600">
+                                    <th class="px-3 py-2">Data / Hora</th>
+                                    <th class="px-3 py-2">Turma</th>
+                                    <th class="px-3 py-2">Nome do Aluno</th>
+                                    <th class="px-3 py-2">Ação Realizada</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-log-pdf" class="divide-y divide-gray-200 bg-white">
+                                <tr><td colspan="4" class="px-3 py-3 text-center text-gray-400">Nenhum registro de download de PDF encontrado.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </details>
         </div>
     </div>
 
@@ -166,7 +225,7 @@
         </div>
     </div>
 
-    <!-- MODAL / LABORATÓRIO E CALIBRAÇÃO TRI INDEPENDENTE POR ÁREA -->
+    <!-- MODAL TRI -->
     <div id="modal-calibracao-tri" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <header class="bg-indigo-600 text-white p-5 flex justify-between items-center">
@@ -174,27 +233,23 @@
                     <h2 class="text-xl font-bold">🧪 Laboratório & Calibração Customizada por Área</h2>
                     <p class="text-xs text-indigo-200">Ajuste os parâmetros, tetos e analise o simulador de forma independente para cada área.</p>
                 </div>
-                <button onclick="fecharModalTRI()" class="bg-indigo-700 hover:bg-indigo-800 text-white px-4 py-2 rounded-lg text-xs font-bold transition">✖ Fechar Laboratório</button>
+                <button onclick="fecharModalTRI()" class="bg-indigo-700 hover:bg-indigo-800 text-white px-4 py-2 rounded-lg text-xs font-bold transition">✖ Fechar</button>
             </header>
-            
             <div class="p-6 overflow-y-auto space-y-6 flex-1 bg-gray-50">
-                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 flex flex-col md:flex-row justify-between items-center gap-3">
-                    <div>
-                        <h3 class="font-bold text-indigo-900 text-sm">🎯 Selecione a Área de Foco para Calibração</h3>
-                    </div>
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 flex justify-between items-center">
+                    <h3 class="font-bold text-indigo-900 text-sm">🎯 Selecione a Área de Foco</h3>
                     <select id="select-area-laboratorio" onchange="mudarAreaLaboratorio()" class="px-4 py-2 border border-indigo-300 rounded-lg font-bold text-indigo-800 bg-white shadow-sm">
-                        <option value="ling">Linguagens e Códigos (1 a 45)</option>
-                        <option value="hum">Ciências Humanas (46 a 90)</option>
-                        <option value="nat">Ciências da Natureza (91 a 135)</option>
-                        <option value="mat">Matemática (136 a 180)</option>
+                        <option value="ling">Linguagens e Códigos</option>
+                        <option value="hum">Ciências Humanas</option>
+                        <option value="nat">Ciências da Natureza</option>
+                        <option value="mat">Matemática</option>
                     </select>
                 </div>
-
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-white p-5 rounded-xl border shadow-sm space-y-4">
-                        <h3 class="font-bold text-gray-800 text-sm">🎛️ Controles Finos (Área Atual)</h3>
+                        <h3 class="font-bold text-gray-800 text-sm">🎛️ Controles Finos</h3>
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Fator Base de Acerto da Área</label>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Fator Base de Acerto</label>
                             <input type="range" id="param-base-acerto" min="4.0" max="15.0" step="0.5" value="7.2" oninput="salvarParametrosAreaAtual(); atualizarSimuladorLaboratorio();" class="w-full">
                             <span id="val-base-acerto" class="text-xs font-bold text-indigo-600">7.2</span>
                         </div>
@@ -204,215 +259,88 @@
                             <span id="val-peso-dif" class="text-xs font-bold text-indigo-600">14.0</span>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Teto Máximo da Nota para esta Área</label>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Teto Máximo da Nota</label>
                             <input type="number" id="param-teto-nota" value="1000" onchange="salvarParametrosAreaAtual(); atualizarSimuladorLaboratorio();" class="w-full px-3 py-1.5 border rounded text-xs font-bold">
                         </div>
                     </div>
-
                     <div class="bg-white p-5 rounded-xl border shadow-sm flex flex-col justify-between">
                         <div>
                             <div class="flex justify-between items-center mb-2">
-                                <h3 class="font-bold text-gray-800 text-sm">📊 Simulador Instantâneo do Bloco</h3>
+                                <h3 class="font-bold text-gray-800 text-sm">📊 Simulador Instantâneo por Desempenho</h3>
                                 <span id="sim-aviso-bloco" class="text-[10px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded">Ativas: 45</span>
                             </div>
+                            <p class="text-[11px] text-gray-500 mb-3">Defina quantos acertos o aluno hipotético obteve em cada nível desta prova:</p>
                             <div class="grid grid-cols-3 gap-2 mb-4">
-                                <div><label class="block text-[10px] font-bold text-green-700 mb-1">🟢 Fáceis</label><input type="number" id="sim-facil" min="0" max="45" value="10" oninput="ajustarAcertosSimulador('facil')" class="w-full px-2 py-1 border rounded text-xs font-bold text-center"></div>
-                                <div><label class="block text-[10px] font-bold text-yellow-700 mb-1">🟡 Médias</label><input type="number" id="sim-medio" min="0" max="45" value="15" oninput="ajustarAcertosSimulador('medio')" class="w-full px-2 py-1 border rounded text-xs font-bold text-center"></div>
-                                <div><label class="block text-[10px] font-bold text-red-700 mb-1">🔴 Difíceis</label><input type="number" id="sim-dificil" min="0" max="45" value="5" oninput="ajustarAcertosSimulador('dificil')" class="w-full px-2 py-1 border rounded text-xs font-bold text-center"></div>
+                                <div><label class="block text-[10px] font-bold text-green-700 mb-1">🟢 Fáceis (<span id="max-facil-lbl">0</span>)</label><input type="number" id="sim-facil" min="0" max="45" value="10" oninput="ajustarAcertosSimulador()" class="w-full px-2 py-1 border rounded text-xs font-bold text-center"></div>
+                                <div><label class="block text-[10px] font-bold text-yellow-700 mb-1">🟡 Médias (<span id="max-medio-lbl">0</span>)</label><input type="number" id="sim-medio" min="0" max="45" value="15" oninput="ajustarAcertosSimulador()" class="w-full px-2 py-1 border rounded text-xs font-bold text-center"></div>
+                                <div><label class="block text-[10px] font-bold text-red-700 mb-1">🔴 Difíceis (<span id="max-dificil-lbl">0</span>)</label><input type="number" id="sim-dificil" min="0" max="45" value="5" oninput="ajustarAcertosSimulador()" class="w-full px-2 py-1 border rounded text-xs font-bold text-center"></div>
                             </div>
                         </div>
                         <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-200 text-center">
-                            <p class="text-[10px] font-bold text-indigo-600 uppercase">Nota TRI Resultante (Área Atual)</p>
+                            <p class="text-[10px] font-bold text-indigo-600 uppercase">Nota TRI Resultante</p>
                             <p id="sim-resultado-nota" class="text-3xl font-extrabold text-indigo-900 mt-1">780.4</p>
                         </div>
                     </div>
                 </div>
+                <!-- MAPEAMENTO DE DIFICULDADE & IMPORTAÇÃO XLSX -->
+                <div class="bg-white p-5 rounded-xl border shadow-sm space-y-4">
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-3 border-b pb-3">
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-sm">🎯 Mapeamento de Dificuldade & Anulações</h3>
+                            <p class="text-xs text-gray-500">Configure as 45 questões manualmente ou importe via planilha XLSX.</p>
+                        </div>
+                        <div class="flex items-center space-x-2 flex-wrap gap-2">
+                            <button onclick="baixarModeloNiveisXLSX()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold transition">📥 Baixar Modelo XLSX</button>
+                            <label class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer shadow">
+                                📤 Importar Níveis (XLSX) <input type="file" id="file-import-niveis" accept=".xlsx,.xls" onchange="importarNiveisXLSX(event)" class="hidden">
+                            </label>
+                            <button onclick="exportarNiveisAtualXLSX()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow">💾 Exportar Atuais</button>
+                        </div>
+                    </div>
 
-                <div class="bg-white p-5 rounded-xl border shadow-sm">
-                    <h3 class="font-bold text-gray-800 text-sm mb-1">🎯 Mapeamento de Dificuldade & Anulações Exclusivo da Área</h3>
+                    <div class="flex items-center space-x-3 text-xs font-bold">
+                        <span class="bg-green-100 text-green-800 px-2.5 py-1 rounded">🟢 Fáceis: <span id="contador-facil-map">0</span></span>
+                        <span class="bg-yellow-100 text-yellow-800 px-2.5 py-1 rounded">🟡 Médias: <span id="contador-medio-map">0</span></span>
+                        <span class="bg-red-100 text-red-800 px-2.5 py-1 rounded">🔴 Difíceis: <span id="contador-dificil-map">0</span></span>
+                        <span class="bg-gray-200 text-gray-700 px-2.5 py-1 rounded">🚫 Anuladas: <span id="contador-anulada-map">0</span></span>
+                    </div>
+
                     <div class="overflow-x-auto max-h-60 border rounded-lg">
                         <table class="min-w-full divide-y divide-gray-200 text-xs">
-                            <thead class="bg-gray-100 sticky top-0"><tr><th class="px-4 py-2 text-left">Questão</th><th class="px-4 py-2 text-left">Status / Classificação</th></tr></thead>
+                            <thead class="bg-gray-100 sticky top-0"><tr><th class="px-4 py-2 text-left">Questão</th><th class="px-4 py-2 text-left">Status</th></tr></thead>
                             <tbody id="tabela-mapeamento-questoes" class="bg-white divide-y divide-gray-200"></tbody>
                         </table>
                     </div>
                 </div>
             </div>
-
             <footer class="bg-gray-100 p-4 flex justify-end space-x-3 border-t">
-                <button onclick="fecharModalTRI()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition">Cancelar</button>
-                <button onclick="salvarParametrosLabTRI()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-xs font-bold transition shadow">Salvar Alterações e Atualizar Sistema</button>
+                <button onclick="fecharModalTRI()" class="bg-gray-500 text-white px-4 py-2 rounded-lg text-xs font-bold">Fechar</button>
+                <button onclick="publicarAutomaticoGitHub()" class="bg-emerald-600 text-white px-5 py-2 rounded-lg text-xs font-bold shadow">Salvar e Publicar</button>
             </footer>
         </div>
     </div>
 
     <script>
+        const SUPABASE_URL = "https://ayclwucigtoufybvmtll.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_uXpJrC1SkAXsyqLqxqdFZw_RvEsxLXy";
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         let simAtual = "1";
         let listaDados1Dia = [];
         let listaDados2Dia = [];
+        const VERSAO_SISTEMA = "v3.5.0";
 
-        window.onload = async function() {
-            // Puxa os dados da nuvem ao abrir o painel do desenvolvedor
-            let dadosNuvem = await carregarDadosDaNuvem();
-            if (dadosNuvem && dadosNuvem.localStorageBackup) {
-                for(let k in dadosNuvem.localStorageBackup) {
-                    localStorage.setItem(k, dadosNuvem.localStorageBackup[k]);
-                }
-            }
+        window.onload = function() {
             carregarListaSimulados();
             carregarAuditoria();
+            carregarLogAuditoriaPDF();
+            atualizarBadgeVersaoPainel();
         };
 
-        async function sincronizarComNuvemManual() {
-            let dadosBackup = {};
-            for(let i=0; i<localStorage.length; i++) {
-                let key = localStorage.key(i);
-                dadosBackup[key] = localStorage.getItem(key);
-            }
-            await salvarDadosNaNuvem({ localStorageBackup: dadosBackup, ultimaAtualizacao: new Date().toISOString() });
-            alert("Dados sincronizados com sucesso na nuvem para os alunos!");
-        }
-
-        async function salvarTudoNoSistema() {
-            if (listaDados1Dia.length > 0) localStorage.setItem(`dados_1dia_sim${simAtual}`, JSON.stringify(listaDados1Dia));
-            if (listaDados2Dia.length > 0) localStorage.setItem(`dados_2dia_sim${simAtual}`, JSON.stringify(listaDados2Dia));
-            
-            await sincronizarComNuvemManual();
-
-            document.getElementById("msg-sucesso").classList.remove("hidden");
-            setTimeout(() => document.getElementById("msg-sucesso").classList.add("hidden"), 4000);
-            carregarAuditoria();
-        }
-
-        function carregarListaSimulados() {
-            let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1", "2", "3", "4", "5"]');
-            const select = document.getElementById("select-edicao-simulado");
-            select.innerHTML = "";
-            simuladosSalvos.forEach(s => {
-                let opt = document.createElement("option");
-                opt.value = s;
-                opt.innerText = `${s}º Simulado`;
-                if(s === simAtual) opt.selected = true;
-                select.appendChild(opt);
-            });
-            atualizarBadgeStatus();
-        }
-
-        function adicionarNovoSimulado() {
-            let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1", "2", "3", "4", "5"]');
-            let proximo = String(Math.max(...simuladosSalvos.map(Number)) + 1);
-            simuladosSalvos.push(proximo);
-            localStorage.setItem("lista_simulados_cadastrados", JSON.stringify(simuladosSalvos));
-            simAtual = proximo;
-            carregarListaSimulados();
-            mudarEdicaoSimulado();
-        }
-
-        function excluirSimuladoAtual() {
-            let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1", "2", "3", "4", "5"]');
-            if (simuladosSalvos.length <= 1) { alert("Mantenha ao menos um simulado cadastrado."); return; }
-            if(confirm(`Tem certeza que deseja excluir o ${simAtual}º Simulado e todos os seus dados?`)) {
-                localStorage.removeItem(`dados_1dia_sim${simAtual}`);
-                localStorage.removeItem(`dados_2dia_sim${simAtual}`);
-                localStorage.removeItem(`notas_redacao_sim${simAtual}`);
-                localStorage.removeItem(`config_areas_sim${simAtual}`);
-                simuladosSalvos = simuladosSalvos.filter(s => s !== simAtual);
-                localStorage.setItem("lista_simulados_cadastrados", JSON.stringify(simuladosSalvos));
-                simAtual = simuladosSalvos[0];
-                carregarListaSimulados();
-                mudarEdicaoSimulado();
-            }
-        }
-
-        function mudarEdicaoSimulado() {
-            simAtual = document.getElementById("select-edicao-simulado").value;
-            document.getElementById("titulo-up-1").innerText = `📄 Resultados 1º Dia - ${simAtual}º Simulado (XLSX)`;
-            document.getElementById("titulo-up-2").innerText = `📄 Resultados 2º Dia - ${simAtual}º Simulado (XLSX)`;
-            listaDados1Dia = [];
-            listaDados2Dia = [];
-            document.getElementById("file-1dia").value = "";
-            document.getElementById("file-2dia").value = "";
-            document.getElementById("status-1dia").innerText = "Nenhum arquivo selecionado";
-            document.getElementById("status-2dia").innerText = "Nenhum arquivo selecionado";
-            atualizarBadgeStatus();
-            carregarAuditoria();
-        }
-
-        function atualizarBadgeStatus() {
-            let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
-            let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${simAtual}`) || "[]");
-            let badge = document.getElementById("status-edicao-badge");
-            if(d1.length > 0 && d2.length > 0) {
-                badge.className = "px-3 py-1.5 rounded-full text-xs font-bold bg-green-100 text-green-800 shadow-sm";
-                badge.innerText = "🟢 Completo";
-            } else if(d1.length > 0 || d2.length > 0) {
-                badge.className = "px-3 py-1.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800 shadow-sm";
-                badge.innerText = "🟡 Parcial";
-            } else {
-                badge.className = "px-3 py-1.5 rounded-full text-xs font-bold bg-gray-200 text-gray-700 shadow-sm";
-                badge.innerText = "⚪ Vazio";
-            }
-        }
-
-        function limparDadosDia(dia) {
-            if(confirm(`Limpar dados do ${dia}º Dia?`)) {
-                localStorage.removeItem(`dados_${dia}dia_sim${simAtual}`);
-                if(dia === 1) listaDados1Dia = []; else listaDados2Dia = [];
-                carregarAuditoria();
-                atualizarBadgeStatus();
-            }
-        }
-
-        document.getElementById('file-1dia').addEventListener('change', async function(e) {
-            const files = e.target.files;
-            listaDados1Dia = [];
-            for (let file of files) {
-                let data = await file.arrayBuffer();
-                let workbook = XLSX.read(data, {type: 'array'});
-                listaDados1Dia = listaDados1Dia.concat(XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]));
-            }
-            localStorage.setItem(`dados_1dia_sim${simAtual}`, JSON.stringify(listaDados1Dia));
-            document.getElementById("status-1dia").innerText = `${files.length} arquivo(s) carregado(s).`;
-            carregarAuditoria();
-            atualizarBadgeStatus();
-        });
-
-        document.getElementById('file-2dia').addEventListener('change', async function(e) {
-            const files = e.target.files;
-            listaDados2Dia = [];
-            for (let file of files) {
-                let data = await file.arrayBuffer();
-                let workbook = XLSX.read(data, {type: 'array'});
-                listaDados2Dia = listaDados2Dia.concat(XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]));
-            }
-            localStorage.setItem(`dados_2dia_sim${simAtual}`, JSON.stringify(listaDados2Dia));
-            document.getElementById("status-2dia").innerText = `${files.length} arquivo(s) carregado(s).`;
-            carregarAuditoria();
-            atualizarBadgeStatus();
-        });
-
-        function obterConfigAreas() {
-            let def = {
-                ling: { base: 6.8, pesoDif: 9.5, teto: 1000, questoes: {} },
-                hum:  { base: 8.0, pesoDif: 13.0, teto: 1000, questoes: {} },
-                nat:  { base: 9.5, pesoDif: 21.0, teto: 1000, questoes: {} },
-                mat:  { base: 11.2, pesoDif: 25.0, teto: 1000, questoes: {} }
-            };
-            return JSON.parse(localStorage.getItem(`config_areas_sim${simAtual}`) || JSON.stringify(def));
-        }
-
-        function salvarConfigAreas(config) {
-            localStorage.setItem(`config_areas_sim${simAtual}`, JSON.stringify(config));
-        }
-
-        function salvarConfigTRI() { carregarAuditoria(); }
-
-        async function salvarRedacao(nomeAluno, valor) {
-            let redacoes = JSON.parse(localStorage.getItem(`notas_redacao_sim${simAtual}`) || "{}");
-            redacoes[normalizar(nomeAluno)] = parseFloat(valor) || 0;
-            localStorage.setItem(`notas_redacao_sim${simAtual}`, JSON.stringify(redacoes));
-            await sincronizarComNuvemManual();
-            carregarAuditoria();
+        function atualizarBadgeVersaoPainel() {
+            let ultimaPub = localStorage.getItem("dev_ultima_publicacao") || "Não publicada ainda";
+            document.getElementById("dev-versao-sistema").innerText = `${VERSAO_SISTEMA} (Acertos nas Caixinhas)`;
+            document.getElementById("dev-ultima-atualizacao").innerText = `Última Sincronização: ${ultimaPub}`;
         }
 
         function normalizar(txt) {
@@ -428,18 +356,190 @@
             return Number(reg["Correct Answers"] || reg["Acertos"] || 0) > 0;
         }
 
-        function calcularNotasAlunoSimulado(nomeAlvo, turmaAlvo, freq, dados1Dia, dados2Dia, redacoes) {
-            function acharReg(lista) {
-                return lista.find(item => {
-                    let nm = normalizar(item["Name"] || item["NAME"] || item["Nome"]);
-                    let rNo = String(item["Roll No"] || item["ROLLNO"] || "").trim();
-                    let turma = String(item["Class"] || item["CLASS"] || item["Turma"] || "A").trim();
-                    return nm === normalizar(nomeAlvo) && turma === String(turmaAlvo).trim() && (freq === "-" || rNo === freq);
-                }) || lista.find(item => normalizar(item["Name"] || item["NAME"] || item["Nome"]) === normalizar(nomeAlvo));
+        function obterAlunosProcessados() {
+            let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
+            let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${simAtual}`) || "[]");
+
+            let mapaAlunos = new Map();
+
+            function processarLista(lista) {
+                lista.forEach(item => {
+                    let nome = item["Name"] || item["NAME"] || item["nome"] || item["Nome"] || "";
+                    if (!nome || String(nome).trim() === "") return;
+                    let nomeNorm = normalizar(nome);
+                    let rNo = String(item["Roll No"] || item["ROLLNO"] || item["RollNo"] || item["roll no"] || "").trim();
+                    let rNoLimpo = rNo !== "" && rNo !== "undefined" ? String(Number(rNo)) : "-";
+                    let turma = String(item["Class"] || item["CLASS"] || item["turma"] || item["Turma"] || "A").trim().toUpperCase();
+                    
+                    let chave = `${nomeNorm}_${turma}`;
+                    if (!mapaAlunos.has(chave)) {
+                        mapaAlunos.set(chave, { roll: rNoLimpo, turma: turma, nome: String(nome).trim() });
+                    } else {
+                        let atual = mapaAlunos.get(chave);
+                        if (atual.roll === "-" && rNoLimpo !== "-") {
+                            atual.roll = rNoLimpo;
+                        }
+                    }
+                });
             }
 
-            let reg1 = alunoTemRespostas(acharReg(dados1Dia)) ? acharReg(dados1Dia) : null;
-            let reg2 = alunoTemRespostas(acharReg(dados2Dia)) ? acharReg(dados2Dia) : null;
+            processarLista(d1);
+            processarLista(d2);
+
+            let lista = [];
+            mapaAlunos.forEach(aluno => {
+                let notasCalc = calcularNotasAlunoDesenvolvedor(aluno.nome, aluno.turma, aluno.roll, simAtual);
+                if (notasCalc) {
+                    lista.push({
+                        chamada: aluno.roll || "-",
+                        turma: aluno.turma,
+                        nome: aluno.nome,
+                        ling: notasCalc.ling,
+                        hum: notasCalc.hum,
+                        nat: notasCalc.nat,
+                        mat: notasCalc.mat,
+                        red: notasCalc.red,
+                        media: notasCalc.media
+                    });
+                }
+            });
+            return lista;
+        }
+
+        function gerarPreCalculoAlunosParaNuvem(sId) {
+            let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${sId}`) || "[]");
+            let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${sId}`) || "[]");
+
+            let mapaAlunos = new Map();
+            function processarLista(lista) {
+                lista.forEach(item => {
+                    let nome = item["Name"] || item["NAME"] || item["nome"] || item["Nome"] || "";
+                    if (!nome || String(nome).trim() === "") return;
+                    let nomeNorm = normalizar(nome);
+                    let rNo = String(item["Roll No"] || item["ROLLNO"] || item["RollNo"] || item["roll no"] || "").trim();
+                    let rNoLimpo = rNo !== "" && rNo !== "undefined" ? String(Number(rNo)) : "-";
+                    let turma = String(item["Class"] || item["CLASS"] || item["turma"] || item["Turma"] || "A").trim().toUpperCase();
+                    let chave = `${nomeNorm}_${turma}`;
+                    if (!mapaAlunos.has(chave)) {
+                        mapaAlunos.set(chave, { nome: String(nome).trim(), turma, roll: rNoLimpo });
+                    }
+                });
+            }
+            processarLista(d1);
+            processarLista(d2);
+
+            let listaCalculada = [];
+            mapaAlunos.forEach(al => {
+                let resAl = calcularNotasAlunoDesenvolvedor(al.nome, al.turma, al.roll, sId);
+                if (resAl) listaCalculada.push(resAl);
+            });
+
+            let rGeral = [...listaCalculada].sort((a, b) => b.media - a.media);
+            let rLingGeral  = [...listaCalculada].sort((a, b) => b.ling - a.ling);
+            let rHumGeral   = [...listaCalculada].sort((a, b) => b.hum - a.hum);
+            let rNatGeral   = [...listaCalculada].sort((a, b) => b.nat - a.nat);
+            let rMatGeral   = [...listaCalculada].sort((a, b) => b.mat - a.mat);
+
+            let turmasMap = {};
+            listaCalculada.forEach(a => {
+                if (!turmasMap[a.turma]) turmasMap[a.turma] = [];
+                turmasMap[a.turma].push(a);
+            });
+
+            let rankTurmas = {};
+            for (let turma in turmasMap) {
+                let tAlunos = turmasMap[turma];
+                rankTurmas[turma] = {
+                    geral: [...tAlunos].sort((a, b) => b.media - a.media),
+                    ling: [...tAlunos].sort((a, b) => b.ling - a.ling),
+                    hum: [...tAlunos].sort((a, b) => b.hum - a.hum),
+                    nat: [...tAlunos].sort((a, b) => b.nat - a.nat),
+                    mat: [...tAlunos].sort((a, b) => b.mat - a.mat)
+                };
+            }
+
+            let cacheAlunosSimulado = {};
+            listaCalculada.forEach(a => {
+                let nomeN = normalizar(a.nome);
+                let t = a.turma;
+
+                let posGeralEscola = rGeral.findIndex(x => normalizar(x.nome) === nomeN) + 1;
+                let posLingEscola  = rLingGeral.findIndex(x => normalizar(x.nome) === nomeN) + 1;
+                let posHumEscola   = rHumGeral.findIndex(x => normalizar(x.nome) === nomeN) + 1;
+                let posNatEscola   = rNatGeral.findIndex(x => normalizar(x.nome) === nomeN) + 1;
+                let posMatEscola   = rMatGeral.findIndex(x => normalizar(x.nome) === nomeN) + 1;
+
+                let tData = rankTurmas[t];
+                let posGeralTurma = tData.geral.findIndex(x => normalizar(x.nome) === nomeN) + 1;
+                let posLingTurma  = tData.ling.findIndex(x => normalizar(x.nome) === nomeN) + 1;
+                let posHumTurma   = tData.hum.findIndex(x => normalizar(x.nome) === nomeN) + 1;
+                let posNatTurma   = tData.nat.findIndex(x => normalizar(x.nome) === nomeN) + 1;
+                let posMatTurma   = tData.mat.findIndex(x => normalizar(x.nome) === nomeN) + 1;
+
+                a.posicoes = {
+                    escola: {
+                        geral: `${posGeralEscola}º de ${rGeral.length}`,
+                        ling: `${posLingEscola}º`,
+                        hum: `${posHumEscola}º`,
+                        nat: `${posNatEscola}º`,
+                        mat: `${posMatEscola}º`,
+                        numGeral: posGeralEscola
+                    },
+                    turma: {
+                        geral: `${posGeralTurma}º de ${tData.geral.length}`,
+                        ling: `${posLingTurma}º`,
+                        hum: `${posHumTurma}º`,
+                        nat: `${posNatTurma}º`,
+                        mat: `${posMatTurma}º`,
+                        numGeral: posGeralTurma
+                    }
+                };
+
+                let chaveAluno = `${nomeN}_${t}_${a.roll}`;
+                cacheAlunosSimulado[chaveAluno] = a;
+            });
+
+            localStorage.setItem(`pre_calculo_alunos_sim_${sId}`, JSON.stringify(cacheAlunosSimulado));
+        }
+
+        function obterConfigAreasSimulado(sId) {
+            let def = {
+                ling: { base: 6.8, pesoDif: 9.5, teto: 1000, questoes: {} },
+                hum:  { base: 8.0, pesoDif: 13.0, teto: 1000, questoes: {} },
+                nat:  { base: 9.5, pesoDif: 21.0, teto: 1000, questoes: {} },
+                mat:  { base: 11.2, pesoDif: 25.0, teto: 1000, questoes: {} }
+            };
+            let chaveConfig = `config_areas_sim${sId}`;
+            let configSalva = localStorage.getItem(chaveConfig);
+            return configSalva ? JSON.parse(configSalva) : def;
+        }
+
+        function calcularNotasAlunoDesenvolvedor(nomeAluno, turmaAluno, rollAluno, sId) {
+            let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${sId}`) || "[]");
+            let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${sId}`) || "[]");
+            let redacoes = JSON.parse(localStorage.getItem(`notas_redacao_sim${sId}`) || "{}");
+
+            let nomeNormTarget = normalizar(nomeAluno);
+            let turmaTarget = String(turmaAluno || "").trim().toUpperCase();
+
+            function acharReg(lista) {
+                let exato = lista.find(item => {
+                    let nm = normalizar(item["Name"] || item["NAME"] || item["nome"] || item["Nome"]);
+                    let t = String(item["Class"] || item["CLASS"] || item["turma"] || item["Turma"] || "A").trim().toUpperCase();
+                    return nm === nomeNormTarget && t === turmaTarget;
+                });
+                if (exato) return exato;
+
+                let porNome = lista.find(item => {
+                    let nm = normalizar(item["Name"] || item["NAME"] || item["nome"] || item["Nome"]);
+                    return nm === nomeNormTarget;
+                });
+                return porNome || null;
+            }
+
+            let reg1 = acharReg(d1);
+            let reg2 = acharReg(d2);
+
             if (!reg1 && !reg2) return null;
 
             let ling = 0, hum = 0, nat = 0, mat = 0;
@@ -449,10 +549,16 @@
                 if (!reg) return { mark: 0, opt: '-' };
                 let opt = reg[`Q ${qNum} Options`] !== undefined ? reg[`Q ${qNum} Options`] : reg[`Q${qNum} Options`];
                 let mark = Number(reg[`Q ${qNum} Marks`] !== undefined ? reg[`Q ${qNum} Marks`] : 0);
-                return { opt: opt !== undefined ? opt : '-', mark };
+                
+                let gab = reg[`Q ${qNum} Key`] !== undefined ? reg[`Q ${qNum} Key`] : (reg[`Q${qNum} Key`] !== undefined ? reg[`Q${qNum} Key`] : '');
+                let optStr = opt !== undefined && opt !== null ? String(opt).trim() : '';
+                let gabStr = gab !== undefined && gab !== null ? String(gab).trim() : '';
+                let acertou = mark > 0 || (optStr !== '' && optStr !== '-' && gabStr !== '' && gabStr.toUpperCase().includes(optStr.toUpperCase()));
+
+                return { opt: opt !== undefined ? opt : '-', mark: acertou ? 1 : 0 };
             }
 
-            let cfg = obterConfigAreas();
+            let cfg = obterConfigAreasSimulado(sId);
 
             if (reg1) {
                 for (let q = 1; q <= 90; q++) {
@@ -460,7 +566,6 @@
                     let qLocal = q <= 45 ? q : q - 45;
                     let d = cfg[area].questoes[qLocal] || 'medio';
                     if (d === 'anulada') continue;
-
                     let dQ = obterDado(reg1, q);
                     if (dQ.opt !== '-' && dQ.mark > 0) {
                         if (q <= 45) { ling++; if (d === 'facil') fFaseLing++; }
@@ -468,6 +573,7 @@
                     }
                 }
             }
+
             if (reg2) {
                 for (let qFile = 1; qFile <= 90; qFile++) {
                     let qReal = qFile + 90;
@@ -475,7 +581,6 @@
                     let qLocal = qFile;
                     let d = cfg[area].questoes[qLocal] || 'medio';
                     if (d === 'anulada') continue;
-
                     let dQ2 = obterDado(reg2, qFile);
                     if (dQ2.opt !== '-' && dQ2.mark > 0) {
                         if (qReal <= 135) { nat++; if (d === 'facil') fFaseNat++; }
@@ -511,22 +616,225 @@
             let tHum  = calcTRI(reg1, hum,  fFaseHum,  'hum');
             let tNat  = calcTRI(reg2, nat,  fFaseNat,  'nat');
             let tMat  = calcTRI(reg2, mat,  fFaseMat,  'mat');
-            let tRed  = parseFloat(redacoes[normalizar(nomeAlvo)] || 0);
+            let tRed  = parseFloat(redacoes[normalizar(nomeAluno)] || 0);
             let media = (tLing + tHum + tNat + tMat + tRed) / 5;
 
-            return { presente1: reg1 !== null, presente2: reg2 !== null, ling: tLing, hum: tHum, nat: tNat, mat: tMat, red: tRed, media };
+            return { 
+                nome: nomeAluno, turma: turmaAluno, roll: rollAluno, 
+                ling: tLing, hum: tHum, nat: tNat, mat: tMat, red: tRed, media,
+                acertosLing: ling, acertosHum: hum, acertosNat: nat, acertosMat: mat
+            };
+        }
+
+        async function publicarAutomaticoGitHub() {
+            if (listaDados1Dia.length > 0) localStorage.setItem(`dados_1dia_sim${simAtual}`, JSON.stringify(listaDados1Dia));
+            if (listaDados2Dia.length > 0) localStorage.setItem(`dados_2dia_sim${simAtual}`, JSON.stringify(listaDados2Dia));
+            salvarParametrosAreaAtual();
+
+            let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1"]');
+            simuladosSalvos.forEach(s => {
+                gerarPreCalculoAlunosParaNuvem(s);
+            });
+
+            let dadosBackup = {};
+            for(let i = 0; i < localStorage.length; i++) {
+                let key = localStorage.key(i);
+                if (!key.startsWith("dev_")) {
+                    dadosBackup[key] = localStorage.getItem(key);
+                }
+            }
+
+            let agoraStr = new Date().toLocaleString("pt-BR");
+            localStorage.setItem("dev_ultima_publicacao", agoraStr);
+
+            try {
+                let { error } = await supabaseClient
+                    .from('dados_sistema')
+                    .upsert({ 
+                        id: 'estado_geral', 
+                        conteudo: dadosBackup, 
+                        atualizado_em: new Date() 
+                    });
+
+                if (error) throw error;
+
+                document.getElementById("msg-sucesso").classList.remove("hidden");
+                setTimeout(() => document.getElementById("msg-sucesso").classList.add("hidden"), 5000);
+                atualizarBadgeVersaoPainel();
+                alert("🚀 Salvo na nuvem do Supabase com sucesso!");
+            } catch (err) {
+                console.error(err);
+                alert("Erro ao salvar na nuvem: " + err.message);
+            }
+
+            carregarAuditoria();
+            carregarLogAuditoriaPDF();
+        }
+
+        function carregarListaSimulados() {
+            let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1"]');
+            if (!simuladosSalvos.length) simuladosSalvos = ["1"];
+            const select = document.getElementById("select-edicao-simulado");
+            select.innerHTML = "";
+            simuladosSalvos.forEach(s => {
+                let opt = document.createElement("option");
+                opt.value = s;
+                opt.innerText = `${s}º Simulado`;
+                if(s === simAtual) opt.selected = true;
+                select.appendChild(opt);
+            });
+            atualizarBadgeStatus();
+        }
+
+        function adicionarNovoSimulado() {
+            let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1"]');
+            let proximo = String(Math.max(...simuladosSalvos.map(Number)) + 1);
+            simuladosSalvos.push(proximo);
+            localStorage.setItem("lista_simulados_cadastrados", JSON.stringify(simuladosSalvos));
+            simAtual = proximo;
+            carregarListaSimulados();
+            mudarEdicaoSimulado();
+        }
+
+        function excluirSimuladoAtual() {
+            let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1"]');
+            if(confirm(`Excluir o ${simAtual}º Simulado?`)) {
+                localStorage.removeItem(`dados_1dia_sim${simAtual}`);
+                localStorage.removeItem(`dados_2dia_sim${simAtual}`);
+                localStorage.removeItem(`notas_redacao_sim${simAtual}`);
+                localStorage.removeItem(`config_areas_sim${simAtual}`);
+                localStorage.removeItem(`pre_calculo_alunos_sim${simAtual}`);
+                simuladosSalvos = simuladosSalvos.filter(s => s !== simAtual);
+                if (!simuladosSalvos.length) simuladosSalvos = ["1"];
+                localStorage.setItem("lista_simulados_cadastrados", JSON.stringify(simuladosSalvos));
+                simAtual = simuladosSalvos[0];
+                carregarListaSimulados();
+                mudarEdicaoSimulado();
+            }
+        }
+
+        function mudarEdicaoSimulado() {
+            simAtual = document.getElementById("select-edicao-simulado").value;
+            document.getElementById("titulo-up-1").innerText = `📄 Resultados 1º Dia - ${simAtual}º Simulado (XLSX)`;
+            document.getElementById("titulo-up-2").innerText = `📄 Resultados 2º Dia - ${simAtual}º Simulado (XLSX)`;
+            listaDados1Dia = []; listaDados2Dia = [];
+            document.getElementById("file-1dia").value = "";
+            document.getElementById("file-2dia").value = "";
+            document.getElementById("status-1dia").innerText = "Nenhum arquivo selecionado";
+            document.getElementById("status-2dia").innerText = "Nenhum arquivo selecionado";
+            atualizarBadgeStatus();
+            carregarAuditoria();
+        }
+
+        function atualizarBadgeStatus() {
+            let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
+            let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${simAtual}`) || "[]");
+            let badge = document.getElementById("status-edicao-badge");
+            if(d1.length > 0 && d2.length > 0) {
+                badge.className = "px-3 py-1.5 rounded-full text-xs font-bold bg-green-100 text-green-800 shadow-sm";
+                badge.innerText = "🟢 Completo";
+            } else if(d1.length > 0 || d2.length > 0) {
+                badge.className = "px-3 py-1.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800 shadow-sm";
+                badge.innerText = "🟡 Parcial";
+            } else {
+                badge.className = "px-3 py-1.5 rounded-full text-xs font-bold bg-gray-200 text-gray-700 shadow-sm";
+                badge.innerText = "⚪ Vazio";
+            }
+        }
+
+        function limparDadosDia(dia) {
+            if(confirm(`Limpar dados do ${dia}º Dia?`)) {
+                localStorage.removeItem(`dados_${dia}dia_sim${simAtual}`);
+                if(dia === 1) listaDados1Dia = []; else listaDados2Dia = [];
+                carregarAuditoria();
+                atualizarBadgeStatus();
+            }
+        }
+
+        document.getElementById('file-1dia').addEventListener('change', async function(e) {
+            let files = Array.from(e.target.files);
+            if (files.length === 0) return;
+            let promessas = files.map(file => {
+                return new Promise((resolve) => {
+                    let reader = new FileReader();
+                    reader.onload = function(evt) {
+                        try {
+                            let data = new Uint8Array(evt.target.result);
+                            let workbook = XLSX.read(data, {type: 'array'});
+                            let sheetName = workbook.SheetNames[0];
+                            let json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                            resolve(json);
+                        } catch (err) {
+                            console.error("Erro ao ler arquivo 1º dia:", err);
+                            resolve([]);
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                });
+            });
+
+            let resultados = await Promise.all(promessas);
+            listaDados1Dia = [];
+            resultados.forEach(res => { listaDados1Dia = listaDados1Dia.concat(res); });
+            localStorage.setItem(`dados_1dia_sim${simAtual}`, JSON.stringify(listaDados1Dia));
+            document.getElementById("status-1dia").innerText = `${files.length} arquivo(s) carregado(s) (${listaDados1Dia.length} registros).`;
+            carregarAuditoria();
+            atualizarBadgeStatus();
+        });
+
+        document.getElementById('file-2dia').addEventListener('change', async function(e) {
+            let files = Array.from(e.target.files);
+            if (files.length === 0) return;
+            let promessas = files.map(file => {
+                return new Promise((resolve) => {
+                    let reader = new FileReader();
+                    reader.onload = function(evt) {
+                        try {
+                            let data = new Uint8Array(evt.target.result);
+                            let workbook = XLSX.read(data, {type: 'array'});
+                            let sheetName = workbook.SheetNames[0];
+                            let json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                            resolve(json);
+                        } catch (err) {
+                            console.error("Erro ao ler arquivo 2º dia:", err);
+                            resolve([]);
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                });
+            });
+
+            let resultados = await Promise.all(promessas);
+            listaDados2Dia = [];
+            resultados.forEach(res => { listaDados2Dia = listaDados2Dia.concat(res); });
+            localStorage.setItem(`dados_2dia_sim${simAtual}`, JSON.stringify(listaDados2Dia));
+            document.getElementById("status-2dia").innerText = `${files.length} arquivo(s) carregado(s) (${listaDados2Dia.length} registros).`;
+            carregarAuditoria();
+            atualizarBadgeStatus();
+        });
+
+        function obterConfigAreas() {
+            let def = {
+                ling: { base: 6.8, pesoDif: 9.5, teto: 1000, questoes: {} },
+                hum:  { base: 8.0, pesoDif: 13.0, teto: 1000, questoes: {} },
+                nat:  { base: 9.5, pesoDif: 21.0, teto: 1000, questoes: {} },
+                mat:  { base: 11.2, pesoDif: 25.0, teto: 1000, questoes: {} }
+            };
+            return JSON.parse(localStorage.getItem(`config_areas_sim${simAtual}`) || JSON.stringify(def));
+        }
+
+        function salvarConfigAreas(config) {
+            localStorage.setItem(`config_areas_sim${simAtual}`, JSON.stringify(config));
         }
 
         function carregarAuditoria() {
             let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
             let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${simAtual}`) || "[]");
-            let redacoes = JSON.parse(localStorage.getItem(`notas_redacao_sim${simAtual}`) || "{}");
-
             const tbody = document.getElementById("tabela-auditoria");
             tbody.innerHTML = "";
 
             if (d1.length === 0 && d2.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-4 text-center text-gray-400">Nenhum dado salvo para o ${simAtual}º Simulado.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-4 text-center text-gray-400">Nenhum dado salvo para o ${simAtual}º Simulado.</td></tr>`;
                 document.getElementById("stat-total-alunos").innerText = "0";
                 document.getElementById("stat-media-geral").innerText = "0.0";
                 document.getElementById("stat-maior-nota").innerText = "0.0";
@@ -534,21 +842,8 @@
                 return;
             }
 
-            let mapaAlunos = new Map();
-            let turmasSet = new Set();
-            function processarLista(lista) {
-                lista.forEach(item => {
-                    let nome = item["Name"] || item["NAME"] || item["Nome"] || "";
-                    if (!nome) return;
-                    let nomeNorm = normalizar(nome);
-                    let rNo = String(item["Roll No"] || item["ROLLNO"] || "").trim();
-                    let turma = item["Class"] || item["CLASS"] || item["Turma"] || "A";
-                    turmasSet.add(turma);
-                    if (!mapaAlunos.has(nomeNorm)) mapaAlunos.set(nomeNorm, { roll: rNo, turma: turma, nome: nome });
-                });
-            }
-            processarLista(d1);
-            processarLista(d2);
+            let alunos = obterAlunosProcessados();
+            let turmasSet = new Set(alunos.map(a => a.turma));
 
             const selectTurma = document.getElementById("filtro-turma");
             let turmaSel = selectTurma.value;
@@ -562,144 +857,97 @@
 
             let termoBusca = normalizar(document.getElementById("filtro-nome").value);
             let turmaFiltro = document.getElementById("filtro-turma").value;
-            let listaAlunosUnicos = Array.from(mapaAlunos.values());
-            let somaMedias = 0, maior = 0, menor = 9999, totalValidos = 0;
+            let criterioOrdenacao = document.getElementById("ordenacao-tabela").value;
 
-            listaAlunosUnicos.forEach(aluno => {
-                let rNo = aluno.roll || "-";
-                let turma = aluno.turma;
-                let nome = aluno.nome;
+            let filtrados = alunos.filter(a => {
+                if (termoBusca && !normalizar(a.nome).includes(termoBusca)) return false;
+                if (turmaFiltro !== "TODAS" && a.turma !== turmaFiltro) return false;
+                return true;
+            });
 
-                if(termoBusca && !normalizar(nome).includes(termoBusca)) return;
-                if(turmaFiltro !== "TODAS" && turma !== turmaFiltro) return;
+            filtrados.sort((a, b) => {
+                if (criterioOrdenacao === 'nome') return a.nome.localeCompare(b.nome);
+                if (criterioOrdenacao === 'media_desc') return b.media - a.media;
+                if (criterioOrdenacao === 'media_asc') return a.media - b.media;
+                if (criterioOrdenacao === 'chamada') return String(a.chamada).localeCompare(String(b.chamada), undefined, {numeric: true});
+                if (criterioOrdenacao === 'mat') return b.mat - a.mat;
+                if (criterioOrdenacao === 'nat') return b.nat - a.nat;
+                if (criterioOrdenacao === 'hum') return b.hum - a.hum;
+                if (criterioOrdenacao === 'ling') return b.ling - a.ling;
+                if (criterioOrdenacao === 'red') return b.red - a.red;
+                return 0;
+            });
 
-                let notasCalc = calcularNotasAlunoSimulado(nome, turma, rNo, d1, d2, redacoes);
-                let mediaStr = "-";
-                let badge1 = '<span class="text-gray-400">Ausente</span>';
-                let badge2 = '<span class="text-gray-400">Ausente</span>';
-
-                if(notasCalc) {
-                    mediaStr = notasCalc.media.toFixed(1);
-                    somaMedias += notasCalc.media;
-                    if(notasCalc.media > maior) maior = notasCalc.media;
-                    if(notasCalc.media < menor) menor = notasCalc.media;
-                    totalValidos++;
-                    if(notasCalc.presente1) badge1 = '<span class="text-green-600 font-bold">Presente</span>';
-                    if(notasCalc.presente2) badge2 = '<span class="text-green-600 font-bold">Presente</span>';
-                }
-
-                let notaRedacao = redacoes[normalizar(nome)] !== undefined ? redacoes[normalizar(nome)] : "";
+            let somaMedias = 0, maior = 0, menor = 9999;
+            filtrados.forEach(a => {
+                somaMedias += a.media;
+                if (a.media > maior) maior = a.media;
+                if (a.media < menor) menor = a.media;
 
                 let tr = document.createElement("tr");
                 tr.innerHTML = `
-                    <td class="px-4 py-2 font-semibold text-gray-700">${rNo}</td>
-                    <td class="px-4 py-2 text-gray-600">${turma}</td>
-                    <td class="px-4 py-2 font-medium text-blue-600 cursor-pointer hover:underline" onclick="inspecionarAluno('${nome.replace(/'/g, "\\'")}', '${turma}', '${rNo}')">${nome}</td>
-                    <td class="px-4 py-2 text-center">${badge1}</td>
-                    <td class="px-4 py-2 text-center">${badge2}</td>
-                    <td class="px-4 py-2 text-center font-bold text-gray-800">${mediaStr}</td>
-                    <td class="px-4 py-2 text-center">
-                        <input type="number" step="10" min="0" max="1000" value="${notaRedacao}" 
-                            onchange="salvarRedacao('${nome.replace(/'/g, "\\'")}', this.value)" 
-                            class="w-24 px-2 py-1 border rounded text-center font-bold text-blue-600" placeholder="0-1000">
-                    </td>
+                    <td class="px-4 py-2 font-semibold text-gray-700">${a.chamada}</td>
+                    <td class="px-4 py-2 text-gray-600">${a.turma}</td>
+                    <td class="px-4 py-2 font-medium text-blue-600 cursor-pointer hover:underline" onclick="inspecionarAluno('${a.nome.replace(/'/g, "\\'")}', '${a.turma}', '${a.chamada}')">${a.nome}</td>
+                    <td class="px-4 py-2 text-center font-semibold text-indigo-600">${a.ling.toFixed(1)}</td>
+                    <td class="px-4 py-2 text-center font-semibold text-green-600">${a.hum.toFixed(1)}</td>
+                    <td class="px-4 py-2 text-center font-semibold text-yellow-600">${a.nat.toFixed(1)}</td>
+                    <td class="px-4 py-2 text-center font-semibold text-purple-600">${a.mat.toFixed(1)}</td>
+                    <td class="px-4 py-2 text-center font-semibold text-pink-600">${a.red.toFixed(0)}</td>
+                    <td class="px-4 py-2 text-center font-bold text-gray-900">${a.media.toFixed(1)}</td>
                 `;
                 tbody.appendChild(tr);
             });
 
-            document.getElementById("stat-total-alunos").innerText = listaAlunosUnicos.length;
-            document.getElementById("stat-media-geral").innerText = totalValidos > 0 ? (somaMedias / totalValidos).toFixed(1) : "0.0";
+            document.getElementById("stat-total-alunos").innerText = filtrados.length;
+            document.getElementById("stat-media-geral").innerText = filtrados.length > 0 ? (somaMedias / filtrados.length).toFixed(1) : "0.0";
             document.getElementById("stat-maior-nota").innerText = maior > 0 ? maior.toFixed(1) : "0.0";
             document.getElementById("stat-menor-nota").innerText = menor < 9999 ? menor.toFixed(1) : "0.0";
         }
 
-        function inspecionarAluno(nomeAlvo, turmaAlvo, freq) {
-            let dados1Dia = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
-            let dados2Dia = JSON.parse(localStorage.getItem(`dados_2dia_sim${simAtual}`) || "[]");
-            let redacoes = JSON.parse(localStorage.getItem(`notas_redacao_sim${simAtual}`) || "{}");
-
-            function acharRegistroExato(lista) {
-                return lista.find(item => {
-                    let nm = normalizar(item["Name"] || item["NAME"] || item["Nome"]);
-                    let rNo = String(item["Roll No"] || item["ROLLNO"] || item["RollNo"] || "").trim();
-                    let turma = String(item["Class"] || item["CLASS"] || item["Turma"] || "A").trim();
-                    return nm === normalizar(nomeAlvo) && turma === String(turmaAlvo).trim() && (freq === "-" || rNo === freq);
-                }) || lista.find(item => normalizar(item["Name"] || item["NAME"] || item["Nome"]) === normalizar(nomeAlvo));
+        function carregarLogAuditoriaPDF() {
+            let logs = JSON.parse(localStorage.getItem("log_downloads_pdf") || "[]");
+            const tbody = document.getElementById("tabela-log-pdf");
+            tbody.innerHTML = "";
+            if (logs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="px-3 py-3 text-center text-gray-400">Nenhum registro de download de PDF encontrado.</td></tr>`;
+                return;
             }
-
-            let reg1 = alunoTemRespostas(acharRegistroExato(dados1Dia)) ? acharRegistroExato(dados1Dia) : null;
-            let reg2 = alunoTemRespostas(acharRegistroExato(dados2Dia)) ? acharRegistroExato(dados2Dia) : null;
-
-            document.getElementById("insp-nome").innerText = `Aluno(a): ${nomeAlvo} (${simAtual}º Simulado)`;
-            document.getElementById("insp-turma").innerText = `Turma: ${turmaAlvo} | Chamada: ${freq}`;
-            document.getElementById("insp-status-presenca").innerText = `${reg1 ? "✅ Presente 1º Dia" : "❌ Ausente 1º Dia"} | ${reg2 ? "✅ Presente 2º Dia" : "❌ Ausente 2º Dia"}`;
-
-            let ling = 0, hum = 0, nat = 0, mat = 0;
-            const tabelaHTML = document.getElementById("insp-tabela-questoes");
-            tabelaHTML.innerHTML = "";
-
-            function obterDado(reg, qNum) {
-                if (!reg) return { mark: 0, opt: '-' };
-                let opt = reg[`Q ${qNum} Options`] !== undefined ? reg[`Q ${qNum} Options`] : reg[`Q${qNum} Options`];
-                let mark = Number(reg[`Q ${qNum} Marks`] !== undefined ? reg[`Q ${qNum} Marks`] : 0);
-                return { opt: opt !== undefined ? opt : '-', mark };
-            }
-
-            let cfg = obterConfigAreas();
-
-            if (reg1) {
-                for (let q = 1; q <= 90; q++) {
-                    let area = q <= 45 ? 'ling' : 'hum';
-                    let qLocal = q <= 45 ? q : q - 45;
-                    let d = cfg[area].questoes[qLocal] || 'medio';
-                    if (d === 'anulada') continue;
-
-                    let dQ = obterDado(reg1, q);
-                    if (dQ.opt !== '-') {
-                        if (dQ.mark > 0) { if (q <= 45) ling++; else hum++; }
-                        adicionarLinha(q, dQ.opt, '-', dQ.mark, tabelaHTML);
-                    } else { adicionarLinha(q, '-', '-', 0, tabelaHTML, true); }
-                }
-            } else { for (let q = 1; q <= 90; q++) adicionarLinha(q, '-', '-', 0, tabelaHTML, true); }
-
-            if (reg2) {
-                for (let qFile = 1; qFile <= 90; qFile++) {
-                    let qReal = qFile + 90;
-                    let area = qFile <= 45 ? 'nat' : 'mat';
-                    let qLocal = qFile;
-                    let d = cfg[area].questoes[qLocal] || 'medio';
-                    if (d === 'anulada') continue;
-
-                    let dQ2 = obterDado(reg2, qFile);
-                    if (dQ2.opt !== '-') {
-                        if (dQ2.mark > 0) { if (qReal <= 135) nat++; else mat++; }
-                        adicionarLinha(qReal, dQ2.opt, '-', dQ2.mark, tabelaHTML);
-                    } else { adicionarLinha(qReal, '-', '-', 0, tabelaHTML, true); }
-                }
-            } else { for (let qReal = 91; qReal <= 180; qReal++) adicionarLinha(qReal, '-', '-', 0, tabelaHTML, true); }
-
-            let notasCalculadasTemp = calcularNotasAlunoSimulado(nomeAlvo, turmaAlvo, freq, dados1Dia, dados2Dia, redacoes);
-
-            document.getElementById("insp-ling").innerHTML = `Nota TRI: ${notasCalculadasTemp.ling.toFixed(1)} <br><span class="text-xs font-normal text-gray-500">(${ling} acertos)</span>`;
-            document.getElementById("insp-hum").innerHTML = `Nota TRI: ${notasCalculadasTemp.hum.toFixed(1)} <br><span class="text-xs font-normal text-gray-500">(${hum} acertos)</span>`;
-            document.getElementById("insp-nat").innerHTML = `Nota TRI: ${notasCalculadasTemp.nat.toFixed(1)} <br><span class="text-xs font-normal text-gray-500">(${nat} acertos)</span>`;
-            document.getElementById("insp-mat").innerHTML = `Nota TRI: ${notasCalculadasTemp.mat.toFixed(1)} <br><span class="text-xs font-normal text-gray-500">(${mat} acertos)</span>`;
-            document.getElementById("insp-red").innerText = `${notasCalculadasTemp.red} pts`;
-
-            document.getElementById("painel-inspecao").classList.remove("hidden");
-            document.getElementById("painel-inspecao").scrollIntoView({ behavior: 'smooth' });
+            logs.forEach(log => {
+                let tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td class="px-3 py-2 font-mono text-gray-600">${log.dataHora || "--"}</td>
+                    <td class="px-3 py-2 font-semibold text-gray-700">${log.turma || "--"}</td>
+                    <td class="px-3 py-2 font-medium text-blue-600">${log.nome || "--"}</td>
+                    <td class="px-3 py-2 text-gray-800">${log.acao || "Baixou Boletim PDF"}</td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
 
-        function fecharInspecao() { document.getElementById("painel-inspecao").classList.add("hidden"); }
-
-        function adicionarLinha(q, opt, key, mark, tabelaHTML, ausente = false) {
-            let tr = document.createElement("tr");
-            let badge = ausente ? '<span class="text-gray-400">Ausente</span>' : (mark > 0 ? '<span class="text-green-600 font-bold">Acertou</span>' : '<span class="text-red-500 font-bold">Errou</span>');
-            tr.innerHTML = `<td class="px-4 py-1.5 font-semibold">Q${q}</td><td class="px-4 py-1.5">${opt}</td><td class="px-4 py-1.5">${key}</td><td class="px-4 py-1.5">${badge}</td>`;
-            tabelaHTML.appendChild(tr);
+        function limparLogAuditoriaPDF() {
+            if(confirm("Deseja limpar todo o histórico de auditoria de downloads de PDF?")) {
+                localStorage.removeItem("log_downloads_pdf");
+                carregarLogAuditoriaPDF();
+            }
         }
 
-        // --- LABORATÓRIO E CALIBRAÇÃO ---
+        function limparFiltrosTabela() {
+            document.getElementById("filtro-nome").value = "";
+            document.getElementById("filtro-turma").value = "TODAS";
+            document.getElementById("ordenacao-tabela").value = "nome";
+            carregarAuditoria();
+        }
+
+        function exportarTabelaFiltradaXLSX() {
+            let alunos = obterAlunosProcessados();
+            if (alunos.length === 0) { alert("Não há dados."); return; }
+            let ws = XLSX.utils.json_to_sheet(alunos);
+            let wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, `Simulado_${simAtual}`);
+            XLSX.writeFile(wb, `Relatorio_Simulado_${simAtual}.xlsx`);
+        }
+
         function abrirModalTRI() { document.getElementById("modal-calibracao-tri").classList.remove("hidden"); carregarInterfaceAreaAtual(); }
         function fecharModalTRI() { document.getElementById("modal-calibracao-tri").classList.add("hidden"); carregarAuditoria(); }
         function mudarAreaLaboratorio() { carregarInterfaceAreaAtual(); }
@@ -732,9 +980,18 @@
             const tbody = document.getElementById("tabela-mapeamento-questoes");
             tbody.innerHTML = "";
             let inicioQ = areaKey === 'ling' ? 1 : (areaKey === 'hum' ? 46 : (areaKey === 'nat' ? 91 : 136));
+            
+            let contF = 0, contM = 0, contD = 0, contA = 0;
+
             for (let i = 1; i <= 45; i++) {
                 let qGlobal = inicioQ + i - 1;
                 let nivelAtual = c.questoes[i] || "medio";
+                
+                if (nivelAtual === 'facil') contF++;
+                else if (nivelAtual === 'medio') contM++;
+                else if (nivelAtual === 'dificil') contD++;
+                else if (nivelAtual === 'anulada') contA++;
+
                 let tr = document.createElement("tr");
                 tr.innerHTML = `
                     <td class="px-4 py-2 font-semibold text-gray-700">Questão ${qGlobal} (${i}ª da área)</td>
@@ -743,12 +1000,28 @@
                             <option value="facil" ${nivelAtual === 'facil' ? 'selected' : ''}>🟢 Fácil</option>
                             <option value="medio" ${nivelAtual === 'medio' ? 'selected' : ''}>🟡 Média</option>
                             <option value="dificil" ${nivelAtual === 'dificil' ? 'selected' : ''}>🔴 Difícil</option>
-                            <option value="anulada" ${nivelAtual === 'anulada' ? 'selected' : ''}>🚫 Anulada (Neutralizada)</option>
+                            <option value="anulada" ${nivelAtual === 'anulada' ? 'selected' : ''}>🚫 Anulada</option>
                         </select>
                     </td>
                 `;
                 tbody.appendChild(tr);
             }
+
+            document.getElementById("contador-facil-map").innerText = contF;
+            document.getElementById("contador-medio-map").innerText = contM;
+            document.getElementById("contador-dificil-map").innerText = contD;
+            document.getElementById("contador-anulada-map").innerText = contA;
+
+            document.getElementById("max-facil-lbl").innerText = contF;
+            document.getElementById("max-medio-lbl").innerText = contM;
+            document.getElementById("max-dificil-lbl").innerText = contD;
+            document.getElementById("sim-aviso-bloco").innerText = `Ativas: ${45 - contA}`;
+
+            document.getElementById("sim-facil").max = contF;
+            document.getElementById("sim-medio").max = contM;
+            document.getElementById("sim-dificil").max = contD;
+
+            ajustarAcertosSimulador();
         }
 
         function salvarNivelQuestaoArea(qLocal, nivel) {
@@ -756,100 +1029,222 @@
             let cfg = obterConfigAreas();
             cfg[areaKey].questoes[qLocal] = nivel;
             salvarConfigAreas(cfg);
-            atualizarSimuladorLaboratorio();
             renderizarTabelaMapeamentoArea(areaKey, cfg[areaKey]);
+            atualizarSimuladorLaboratorio();
         }
 
-        function obterTotalAtivasAreaAtual() {
+        function ajustarAcertosSimulador() {
             let areaKey = document.getElementById("select-area-laboratorio").value;
             let cfg = obterConfigAreas();
             let c = cfg[areaKey];
-            let anuladas = 0;
-            for (let i = 1; i <= 45; i++) { if (c.questoes[i] === 'anulada') anuladas++; }
-            return 45 - anuladas;
-        }
-
-        function ajustarAcertosSimulador(alterado) {
-            let maxTotal = obterTotalAtivasAreaAtual();
-            let f = parseInt(document.getElementById("sim-facil").value) || 0;
-            let m = parseInt(document.getElementById("sim-medio").value) || 0;
-            let d = parseInt(document.getElementById("sim-dificil").value) || 0;
-            if (f < 0) f = 0; if (m < 0) m = 0; if (d < 0) d = 0;
-            if (alterado === 'facil') {
-                if (f > maxTotal) f = maxTotal; let resto = maxTotal - f;
-                if (m > resto) { m = resto; d = 0; } else { d = resto - m; }
-            } else if (alterado === 'medio') {
-                if (m > maxTotal) m = maxTotal; let resto = maxTotal - m;
-                if (d > resto) { d = resto; f = 0; } else { f = resto - d; }
-            } else if (alterado === 'dificil') {
-                if (d > maxTotal) d = maxTotal; let resto = maxTotal - d;
-                if (m > resto) { m = resto; f = 0; } else { f = resto - m; }
+            
+            let maxF = 0, maxM = 0, maxD = 0;
+            for (let i = 1; i <= 45; i++) {
+                let n = c.questoes[i] || 'medio';
+                if (n === 'facil') maxF++;
+                else if (n === 'medio') maxM++;
+                else if (n === 'dificil') maxD++;
             }
-            document.getElementById("sim-facil").value = f;
-            document.getElementById("sim-medio").value = m;
-            document.getElementById("sim-dificil").value = d;
+
+            let inputF = document.getElementById("sim-facil");
+            let inputM = document.getElementById("sim-medio");
+            let inputD = document.getElementById("sim-dificil");
+
+            let f = parseInt(inputF.value) || 0;
+            let m = parseInt(inputM.value) || 0;
+            let d = parseInt(inputD.value) || 0;
+
+            if (f > maxF) { f = maxF; inputF.value = f; }
+            if (f < 0) { f = 0; inputF.value = f; }
+
+            if (m > maxM) { m = maxM; inputM.value = m; }
+            if (m < 0) { m = 0; inputM.value = m; }
+
+            if (d > maxD) { d = maxD; inputD.value = d; }
+            if (d < 0) { d = 0; inputD.value = d; }
+
             atualizarSimuladorLaboratorio();
         }
 
         function atualizarSimuladorLaboratorio() {
             salvarParametrosAreaAtual();
-            let maxTotal = obterTotalAtivasAreaAtual();
-            document.getElementById("max-questoes-bloco").innerText = maxTotal;
-            document.getElementById("sim-aviso-bloco").innerText = `Ativas: ${maxTotal}`;
             let f = parseInt(document.getElementById("sim-facil").value) || 0;
             let m = parseInt(document.getElementById("sim-medio").value) || 0;
             let d = parseInt(document.getElementById("sim-dificil").value) || 0;
             let total = f + m + d;
-            if (total > maxTotal) { f = maxTotal; m = 0; d = 0; total = maxTotal; }
+            
             let areaKey = document.getElementById("select-area-laboratorio").value;
             let cfg = obterConfigAreas();
             let c = cfg[areaKey];
+            
+            let fatorC = (d > 0 && f < 2) ? 0.40 : 1.0;
             let baseScore = areaKey === 'ling' ? 310.0 : (areaKey === 'hum' ? 300.0 : (areaKey === 'nat' ? 290.0 : 280.0));
-            let score = baseScore + (total * c.base) + (d * c.pesoDif) + (m * (c.pesoDif * 0.5)) + (f * (c.pesoDif * 0.25));
+            let score = baseScore + (total * c.base) + (d * c.pesoDif * fatorC) + (m * (c.pesoDif * 0.5)) + (f * (c.pesoDif * 0.25));
             if (score > c.teto) score = c.teto;
             document.getElementById("sim-resultado-nota").innerText = score.toFixed(1);
         }
 
-        async function salvarParametrosLabTRI() {
-            salvarParametrosAreaAtual();
-            await sincronizarComNuvemManual();
-            carregarAuditoria();
-            alert("Parâmetros da área salvos e sincronizados na nuvem com sucesso!");
-            fecharModalTRI();
+        function baixarModeloNiveisXLSX() {
+            let dadosModelo = [];
+            let areaKey = document.getElementById("select-area-laboratorio").value;
+            let inicioQ = areaKey === 'ling' ? 1 : (areaKey === 'hum' ? 46 : (areaKey === 'nat' ? 91 : 136));
+
+            for (let i = 1; i <= 45; i++) {
+                dadosModelo.push({
+                    "Questao": `Q${inicioQ + i - 1}`,
+                    "Nivel (F, M, D ou Anulada)": "medio"
+                });
+            }
+
+            let worksheet = XLSX.utils.json_to_sheet(dadosModelo);
+            let workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Modelo_Niveis");
+            XLSX.writeFile(workbook, `Modelo_Niveis_${areaKey.toUpperCase()}.xlsx`);
         }
 
-        function exportarRelatorioExcel() {
-            let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
-            let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${simAtual}`) || "[]");
-            let redacoes = JSON.parse(localStorage.getItem(`notas_redacao_sim${simAtual}`) || "{}");
-            if(d1.length === 0 && d2.length === 0) { alert("Sem dados para exportar."); return; }
-            let mapaAlunos = new Map();
-            d1.forEach(i => { let n = i["Name"]||i["NAME"]||i["Nome"]; if(n) mapaAlunos.set(normalizar(n), {nome: n, turma: i["Class"]||i["Turma"]||"A", roll: i["Roll No"]||"-"}); });
-            d2.forEach(i => { let n = i["Name"]||i["NAME"]||i["Nome"]; if(n && !mapaAlunos.has(normalizar(n))) mapaAlunos.set(normalizar(n), {nome: n, turma: i["Class"]||i["Turma"]||"A", roll: i["Roll No"]||"-"}); });
+        function exportarNiveisAtualXLSX() {
+            let areaKey = document.getElementById("select-area-laboratorio").value;
+            let cfg = obterConfigAreas();
+            let c = cfg[areaKey];
+            let inicioQ = areaKey === 'ling' ? 1 : (areaKey === 'hum' ? 46 : (areaKey === 'nat' ? 91 : 136));
+
             let dadosExport = [];
-            mapaAlunos.forEach(aluno => {
-                let res = calcularNotasAlunoSimulado(aluno.nome, aluno.turma, aluno.roll, d1, d2, redacoes);
-                if(res) {
-                    dadosExport.push({
-                        "Chamada": aluno.roll, "Turma": aluno.turma, "Nome do Aluno": aluno.nome,
-                        "1º Dia": res.presente1 ? "Presente" : "Ausente", "2º Dia": res.presente2 ? "Presente" : "Ausente",
-                        "Linguagens (TRI)": Number(res.ling.toFixed(1)), "Humanas (TRI)": Number(res.hum.toFixed(1)),
-                        "Natureza (TRI)": Number(res.nat.toFixed(1)), "Matemática (TRI)": Number(res.mat.toFixed(1)),
-                        "Redação": Number(res.red.toFixed(0)), "Média Simples (Enem)": Number(res.media.toFixed(1))
-                    });
+            for (let i = 1; i <= 45; i++) {
+                dadosExport.push({
+                    "Questao": `Q${inicioQ + i - 1}`,
+                    "Nivel": c.questoes[i] || "medio"
+                });
+            }
+
+            let worksheet = XLSX.utils.json_to_sheet(dadosExport);
+            let workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Niveis_Atuais");
+            XLSX.writeFile(workbook, `Niveis_Configurados_${areaKey.toUpperCase()}.xlsx`);
+        }
+
+        async function importarNiveisXLSX(event) {
+            let file = event.target.files[0];
+            if (!file) return;
+
+            let data = await file.arrayBuffer();
+            let workbook = XLSX.read(data, {type: 'array'});
+            let json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+
+            let areaKey = document.getElementById("select-area-laboratorio").value;
+            let cfg = obterConfigAreas();
+
+            json.forEach((row, index) => {
+                if (index < 45) {
+                    let val = String(row["Nivel"] || row["Nivel (F, M, D ou Anulada)"] || row["nivel"] || "medio").trim().toLowerCase();
+                    let nivelMapeado = "medio";
+                    if (val.startsWith("f") || val === "facil") nivelMapeado = "facil";
+                    else if (val.startsWith("d") || val === "dificil") nivelMapeado = "dificil";
+                    else if (val.startsWith("a") || val === "anulada") nivelMapeado = "anulada";
+
+                    cfg[areaKey].questoes[index + 1] = nivelMapeado;
                 }
             });
-            let ws = XLSX.utils.json_to_sheet(dadosExport);
-            let wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, `Simulado ${simAtual}`);
-            XLSX.writeFile(wb, `Relatorio_Simulado_${simAtual}.xlsx`);
+
+            salvarConfigAreas(cfg);
+            renderizarTabelaMapeamentoArea(areaKey, cfg[areaKey]);
+            atualizarSimuladorLaboratorio();
+            document.getElementById("file-import-niveis").value = "";
+            alert("✅ Níveis importados com sucesso e simulador atualizado dinamicamente!");
+        }
+
+        function inspecionarAluno(nome, turma, roll) {
+            document.getElementById("painel-inspecao").classList.remove("hidden");
+            document.getElementById("insp-nome").innerText = nome;
+            document.getElementById("insp-turma").innerText = `Turma: ${turma} | Chamada: ${roll}`;
+            
+            let res = calcularNotasAlunoDesenvolvedor(nome, turma, roll, simAtual);
+            if (!res) return;
+
+            // Exibindo nota e acertos nas caixinhas (ex: 653.5 (15/45))
+            document.getElementById("insp-ling").innerHTML = `${res.ling.toFixed(1)} <span class="text-xs text-gray-500 font-normal">(${res.acertosLing}/45)</span>`;
+            document.getElementById("insp-hum").innerHTML = `${res.hum.toFixed(1)} <span class="text-xs text-gray-500 font-normal">(${res.acertosHum}/45)</span>`;
+            document.getElementById("insp-nat").innerHTML = `${res.nat.toFixed(1)} <span class="text-xs text-gray-500 font-normal">(${res.acertosNat}/45)</span>`;
+            document.getElementById("insp-mat").innerHTML = `${res.mat.toFixed(1)} <span class="text-xs text-gray-500 font-normal">(${res.acertosMat}/45)</span>`;
+            document.getElementById("insp-red").innerText = `${res.red} pts`;
+
+            let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
+            let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${simAtual}`) || "[]");
+
+            let nomeNormTarget = normalizar(nome);
+            let turmaTarget = String(turma || "").trim().toUpperCase();
+
+            function acharReg(lista) {
+                let exato = lista.find(item => {
+                    let nm = normalizar(item["Name"] || item["NAME"] || item["nome"] || item["Nome"]);
+                    let t = String(item["Class"] || item["CLASS"] || item["turma"] || item["Turma"] || "A").trim().toUpperCase();
+                    return nm === nomeNormTarget && t === turmaTarget;
+                });
+                if (exato) return exato;
+                return lista.find(item => normalizar(item["Name"] || item["NAME"] || item["nome"] || item["Nome"]) === nomeNormTarget) || null;
+            }
+
+            let reg1 = acharReg(d1);
+            let reg2 = acharReg(d2);
+            let cfg = obterConfigAreas();
+            const tbody = document.getElementById("insp-tabela-questoes");
+            tbody.innerHTML = "";
+
+            let htmlQ = "";
+            function obterDetalhesQuestaoInsp(reg, qNum) {
+                if (!reg) return { mark: 0, opt: '-', gabarito: '-' };
+                let opt = reg[`Q ${qNum} Options`] !== undefined ? reg[`Q ${qNum} Options`] : reg[`Q${qNum} Options`];
+                let mark = Number(reg[`Q ${qNum} Marks`] !== undefined ? reg[`Q ${qNum} Marks`] : 0);
+                
+                let gab = reg[`Q ${qNum} Key`] !== undefined ? reg[`Q ${qNum} Key`] : 
+                          (reg[`Q${qNum} Key`] !== undefined ? reg[`Q${qNum} Key`] : 
+                          (reg[`Q ${qNum} Correct Answer`] !== undefined ? reg[`Q ${qNum} Correct Answer`] : 
+                          (reg[`Q${qNum} Correct`] !== undefined ? reg[`Q${qNum} Correct`] : '-')));
+
+                let optStr = opt !== undefined && opt !== null && String(opt).trim() !== "" ? String(opt).trim() : '-';
+                let gabStr = gab !== undefined && gab !== null && String(gab).trim() !== "" ? String(gab).trim() : '-';
+
+                let acertou = mark > 0 || (optStr !== '-' && gabStr !== '-' && gabStr.toUpperCase().includes(optStr.toUpperCase()));
+
+                return { 
+                    opt: optStr, 
+                    mark: acertou ? 1 : 0, 
+                    gabarito: gabStr !== '-' ? gabStr : (acertou ? optStr : '-')
+                };
+            }
+
+            if (reg1) {
+                for (let q = 1; q <= 90; q++) {
+                    let area = q <= 45 ? 'ling' : 'hum';
+                    let qLocal = q <= 45 ? q : q - 45;
+                    let d = cfg[area]?.questoes?.[qLocal] || 'medio';
+                    let det = obterDetalhesQuestaoInsp(reg1, q);
+                    let st = d === 'anulada' ? '<span class="text-orange-500 font-bold">Anulada</span>' : (det.mark > 0 ? '<span class="text-green-600 font-bold">Acertou</span>' : '<span class="text-red-500 font-bold">Errou</span>');
+                    htmlQ += `<tr><td class="px-4 py-2 font-semibold">Q${q}</td><td class="px-4 py-2 font-mono">${det.opt}</td><td class="px-4 py-2 font-mono font-bold text-gray-700">${det.gabarito}</td><td class="px-4 py-2">${st}</td></tr>`;
+                }
+            }
+            if (reg2) {
+                for (let qF = 1; qF <= 90; qF++) {
+                    let qReal = qF + 90;
+                    let area = qF <= 45 ? 'nat' : 'mat';
+                    let d = cfg[area]?.questoes?.[qF] || 'medio';
+                    let det2 = obterDetalhesQuestaoInsp(reg2, qF);
+                    let st2 = d === 'anulada' ? '<span class="text-orange-500 font-bold">Anulada</span>' : (det2.mark > 0 ? '<span class="text-green-600 font-bold">Acertou</span>' : '<span class="text-red-500 font-bold">Errou</span>');
+                    htmlQ += `<tr><td class="px-4 py-2 font-semibold">Q${qReal}</td><td class="px-4 py-2 font-mono">${det2.opt}</td><td class="px-4 py-2 font-mono font-bold text-gray-700">${det2.gabarito}</td><td class="px-4 py-2">${st2}</td></tr>`;
+                }
+            }
+            tbody.innerHTML = htmlQ;
+            document.getElementById("painel-inspecao").scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function fecharInspecao() {
+            document.getElementById("painel-inspecao").classList.add("hidden");
         }
 
         function exportarBackupJSON() {
             let dadosBackup = {};
-            for(let i=0; i<localStorage.length; i++) {
+            for(let i = 0; i < localStorage.length; i++) {
                 let key = localStorage.key(i);
-                dadosBackup[key] = localStorage.getItem(key);
+                if (!key.startsWith("dev_")) dadosBackup[key] = localStorage.getItem(key);
             }
             let blob = new Blob([JSON.stringify(dadosBackup, null, 2)], {type: "application/json"});
             let url = URL.createObjectURL(blob);
@@ -863,18 +1258,13 @@
             let file = event.target.files[0];
             if(!file) return;
             let reader = new FileReader();
-            reader.onload = async function(e) {
+            reader.onload = function(e) {
                 try {
                     let dadosBackup = JSON.parse(e.target.result);
-                    for(let key in dadosBackup) {
-                        localStorage.setItem(key, dadosBackup[key]);
-                    }
-                    await sincronizarComNuvemManual();
-                    alert("Backup restaurado e sincronizado com sucesso!");
+                    for(let key in dadosBackup) { localStorage.setItem(key, dadosBackup[key]); }
+                    alert("Backup restaurado com sucesso!");
                     location.reload();
-                } catch(err) {
-                    alert("Erro ao ler arquivo de backup.");
-                }
+                } catch(err) { alert("Erro ao ler arquivo de backup."); }
             };
             reader.readAsText(file);
         }
