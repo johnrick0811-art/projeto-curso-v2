@@ -43,6 +43,30 @@
             <span id="dev-ultima-atualizacao" class="text-gray-500 text-[11px]">Última Sincronização: --</span>
         </div>
 
+        <!-- NOVO CARD: GESTÃO DE NUVEM & ARMAZENAMENTO (SUPABASE) - ITEM 1 -->
+        <div class="bg-gray-50 border border-gray-200 p-5 rounded-xl mb-6 shadow-sm">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h3 class="font-bold text-gray-800 text-sm flex items-center gap-2">☁️ Gestão de Nuvem & Armazenamento (Supabase)</h3>
+                    <p class="text-xs text-gray-500 mt-0.5">Monitore o volume de dados sincronizados e gerencie o ambiente de testes de forma centralizada.</p>
+                </div>
+                <button onclick="executarLimpezaSupabase()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow flex items-center gap-1.5">
+                    🗑️ Limpar / Resetar Dados do Supabase
+                </button>
+            </div>
+            
+            <!-- Barra de Monitoramento -->
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <div class="flex justify-between items-center text-xs font-semibold mb-1.5">
+                    <span class="text-gray-600">Utilização da Tabela do Sistema:</span>
+                    <span id="label-uso-storage" class="text-blue-700 font-mono">Calculando métricas...</span>
+                </div>
+                <div class="bg-gray-200 rounded-full h-2.5 w-full overflow-hidden">
+                    <div id="barra-uso-storage" class="bg-emerald-500 h-2.5 w-0 transition-all duration-500"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- SELETOR DINÂMICO DE SIMULADOS -->
         <div class="bg-blue-50 p-6 rounded-xl border border-blue-200 mb-6 shadow-inner flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="w-full md:w-auto flex-1">
@@ -336,7 +360,64 @@
             carregarAuditoria();
             carregarLogAuditoriaPDF();
             atualizarBadgeVersaoPainel();
+            verificarStatusArmazenamentoSupabase(); // Monitoramento Supabase - Item 1
         };
+
+        // Funções do Item 1: Monitoramento e Limpeza do Supabase
+        async function verificarStatusArmazenamentoSupabase() {
+            try {
+                let { count, error } = await supabaseClient
+                    .from('dados_sistema')
+                    .select('*', { count: 'exact', head: true });
+
+                if (!error) {
+                    const totalRegistros = count || 0;
+                    const limitePlano = 1000; // Limite base estimado para o indicador visual
+                    let percentual = Math.min(Math.round((totalRegistros / limitePlano) * 100), 100);
+                    
+                    document.getElementById('label-uso-storage').innerText = `${totalRegistros} registro(s) sincronizado(s) (~${percentual}%)`;
+                    const barra = document.getElementById('barra-uso-storage');
+                    barra.style.width = `${percentual}%`;
+                    
+                    if (percentual > 80) {
+                        barra.className = "bg-red-500 h-2.5 transition-all duration-500";
+                    } else {
+                        barra.className = "bg-emerald-500 h-2.5 transition-all duration-500";
+                    }
+                } else {
+                    document.getElementById('label-uso-storage').innerText = 'Online (Métricas indisponíveis)';
+                }
+            } catch (e) {
+                console.error("Erro ao verificar Supabase:", e);
+                document.getElementById('label-uso-storage').innerText = 'Erro de conexão';
+            }
+        }
+
+        async function executarLimpezaSupabase() {
+            const conf1 = confirm("⚠️ ATENÇÃO: Deseja realmente limpar/resetar os dados salvos na nuvem do Supabase neste ambiente v2? Esta ação removerá o registro geral da nuvem.");
+            if (!conf1) return;
+
+            const conf2 = prompt("Para confirmar com segurança, digite 'DELETAR' em letras maiúsculas:");
+            if (conf2 !== "DELETAR") {
+                alert("Operação cancelada por segurança.");
+                return;
+            }
+
+            try {
+                let { error } = await supabaseClient
+                    .from('dados_sistema')
+                    .delete()
+                    .eq('id', 'estado_geral');
+
+                if (error) throw error;
+
+                alert("✅ Dados do Supabase limpos com sucesso neste ambiente v2!");
+                verificarStatusArmazenamentoSupabase();
+            } catch (err) {
+                console.error(err);
+                alert("❌ Erro ao limpar dados no Supabase: " + err.message);
+            }
+        }
 
         function atualizarBadgeVersaoPainel() {
             let ultimaPub = localStorage.getItem("dev_ultima_publicacao") || "Não publicada ainda";
@@ -662,6 +743,7 @@
                 document.getElementById("msg-sucesso").classList.remove("hidden");
                 setTimeout(() => document.getElementById("msg-sucesso").classList.add("hidden"), 5000);
                 atualizarBadgeVersaoPainel();
+                verificarStatusArmazenamentoSupabase();
                 alert("🚀 Salvo na nuvem do Supabase com sucesso!");
             } catch (err) {
                 console.error(err);
@@ -1161,7 +1243,6 @@
             let res = calcularNotasAlunoDesenvolvedor(nome, turma, roll, simAtual);
             if (!res) return;
 
-            // Exibindo nota e acertos nas caixinhas (ex: 653.5 (15/45))
             document.getElementById("insp-ling").innerHTML = `${res.ling.toFixed(1)} <span class="text-xs text-gray-500 font-normal">(${res.acertosLing}/45)</span>`;
             document.getElementById("insp-hum").innerHTML = `${res.hum.toFixed(1)} <span class="text-xs text-gray-500 font-normal">(${res.acertosHum}/45)</span>`;
             document.getElementById("insp-nat").innerHTML = `${res.nat.toFixed(1)} <span class="text-xs text-gray-500 font-normal">(${res.acertosNat}/45)</span>`;
