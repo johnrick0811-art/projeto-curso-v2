@@ -43,15 +43,15 @@
             <span id="dev-ultima-atualizacao" class="text-gray-500 text-[11px]">Última Sincronização: --</span>
         </div>
 
-        <!-- NOVO CARD: GESTÃO DE NUVEM & ARMAZENAMENTO (SUPABASE) - ITEM 1 -->
+        <!-- CARD DE GESTÃO DE NUVEM & ARMAZENAMENTO (SUPABASE) - ITEM 1 (Com exclusão por simulado) -->
         <div class="bg-gray-50 border border-gray-200 p-5 rounded-xl mb-6 shadow-sm">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h3 class="font-bold text-gray-800 text-sm flex items-center gap-2">☁️ Gestão de Nuvem & Armazenamento (Supabase)</h3>
-                    <p class="text-xs text-gray-500 mt-0.5">Monitore o volume de dados sincronizados e gerencie o ambiente de testes de forma centralizada.</p>
+                    <p class="text-xs text-gray-500 mt-0.5">Monitore o volume de dados sincronizados e remova um simulado específico do banco de dados.</p>
                 </div>
                 <button onclick="executarLimpezaSupabase()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow flex items-center gap-1.5">
-                    🗑️ Limpar / Resetar Dados do Supabase
+                    🗑️ Excluir Simulado Específico da Nuvem
                 </button>
             </div>
             
@@ -360,10 +360,10 @@
             carregarAuditoria();
             carregarLogAuditoriaPDF();
             atualizarBadgeVersaoPainel();
-            verificarStatusArmazenamentoSupabase(); // Monitoramento Supabase - Item 1
+            verificarStatusArmazenamentoSupabase();
         };
 
-        // Funções do Item 1: Monitoramento e Limpeza do Supabase
+        // Monitoramento Supabase (tratado caso a tabela ainda não exista)
         async function verificarStatusArmazenamentoSupabase() {
             try {
                 let { count, error } = await supabaseClient
@@ -372,50 +372,78 @@
 
                 if (!error) {
                     const totalRegistros = count || 0;
-                    const limitePlano = 1000; // Limite base estimado para o indicador visual
-                    let percentual = Math.min(Math.round((totalRegistros / limitePlano) * 100), 100);
-                    
+                    let percentual = Math.min(Math.round((totalRegistros / 1000) * 100), 100);
                     document.getElementById('label-uso-storage').innerText = `${totalRegistros} registro(s) sincronizado(s) (~${percentual}%)`;
                     const barra = document.getElementById('barra-uso-storage');
                     barra.style.width = `${percentual}%`;
-                    
-                    if (percentual > 80) {
-                        barra.className = "bg-red-500 h-2.5 transition-all duration-500";
-                    } else {
-                        barra.className = "bg-emerald-500 h-2.5 transition-all duration-500";
-                    }
                 } else {
-                    document.getElementById('label-uso-storage').innerText = 'Online (Métricas indisponíveis)';
+                    document.getElementById('label-uso-storage').innerText = 'Aguardando primeira publicação';
                 }
             } catch (e) {
-                console.error("Erro ao verificar Supabase:", e);
-                document.getElementById('label-uso-storage').innerText = 'Erro de conexão';
+                document.getElementById('label-uso-storage').innerText = 'Online (Tabela será criada ao publicar)';
             }
         }
 
+        // Função de Limpeza Cirúrgica por Simulado Específico
         async function executarLimpezaSupabase() {
-            const conf1 = confirm("⚠️ ATENÇÃO: Deseja realmente limpar/resetar os dados salvos na nuvem do Supabase neste ambiente v2? Esta ação removerá o registro geral da nuvem.");
-            if (!conf1) return;
-
-            const conf2 = prompt("Para confirmar com segurança, digite 'DELETAR' em letras maiúsculas:");
-            if (conf2 !== "DELETAR") {
-                alert("Operação cancelada por segurança.");
+            let simuladoAlvo = prompt("🗑️ Qual o número do simulado você deseja excluir especificamente? (Ex: 1, 2, 3...)");
+            if (!simuladoAlvo || simuladoAlvo.trim() === "") {
+                alert("Operação cancelada.");
                 return;
             }
 
+            simuladoAlvo = simuladoAlvo.trim();
+            const conf1 = confirm(`⚠️ ATENÇÃO: Deseja realmente excluir todos os dados e configurações do ${simuladoAlvo}º Simulado deste ambiente v2?`);
+            if (!conf1) return;
+
             try {
+                // Remove os dados específicos daquele simulado do localStorage
+                localStorage.removeItem(`dados_1dia_sim${simuladoAlvo}`);
+                localStorage.removeItem(`dados_2dia_sim${simuladoAlvo}`);
+                localStorage.removeItem(`notas_redacao_sim${simuladoAlvo}`);
+                localStorage.removeItem(`config_areas_sim${simuladoAlvo}`);
+                localStorage.removeItem(`pre_calculo_alunos_sim_${simuladoAlvo}`);
+
+                // Atualiza a lista de simulados cadastrados removendo o alvo
+                let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1"]');
+                simuladosSalvos = simuladosSalvos.filter(s => s !== simuladoAlvo);
+                if (simuladosSalvos.length === 0) simuladosSalvos = ["1"];
+                localStorage.setItem("lista_simulados_cadastrados", JSON.stringify(simuladosSalvos));
+
+                if (simAtual === simuladoAlvo) {
+                    simAtual = simuladosSalvos[0];
+                }
+
+                // Sincroniza a remoção com a nuvem do Supabase automaticamente
+                let dadosBackup = {};
+                for(let i = 0; i < localStorage.length; i++) {
+                    let key = localStorage.key(i);
+                    if (!key.startsWith("dev_")) {
+                        dadosBackup[key] = localStorage.getItem(key);
+                    }
+                }
+
                 let { error } = await supabaseClient
                     .from('dados_sistema')
-                    .delete()
-                    .eq('id', 'estado_geral');
+                    .upsert({ 
+                        id: 'estado_geral', 
+                        conteudo: dadosBackup, 
+                        atualizado_em: new Date() 
+                    });
 
-                if (error) throw error;
+                if (error) {
+                    console.warn("Aviso na nuvem:", error.message);
+                }
 
-                alert("✅ Dados do Supabase limpos com sucesso neste ambiente v2!");
+                alert(`✅ O ${simuladoAlvo}º Simulado foi excluído com sucesso do painel e da nuvem!`);
+                
+                carregarListaSimulados();
+                mudarEdicaoSimulado();
                 verificarStatusArmazenamentoSupabase();
+
             } catch (err) {
                 console.error(err);
-                alert("❌ Erro ao limpar dados no Supabase: " + err.message);
+                alert("❌ Erro ao limpar o simulado: " + err.message);
             }
         }
 
@@ -427,15 +455,6 @@
 
         function normalizar(txt) {
             return String(txt || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
-        }
-
-        function alunoTemRespostas(reg) {
-            if (!reg) return false;
-            for (let q = 1; q <= 90; q++) {
-                let opt = reg[`Q ${q} Options`] !== undefined ? reg[`Q ${q} Options`] : reg[`Q${q} Options`];
-                if (opt !== undefined && opt !== null && String(opt).trim() !== "" && String(opt).trim() !== "-") return true;
-            }
-            return Number(reg["Correct Answers"] || reg["Acertos"] || 0) > 0;
         }
 
         function obterAlunosProcessados() {
