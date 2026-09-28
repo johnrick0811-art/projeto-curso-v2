@@ -1,20 +1,23 @@
-// config-nuvem.js - Configuração de Sincronização em Nuvem (JSONBin.io)
-const JSONBIN_BIN_ID = "6ab72633ac6210605af66386";
-const JSONBIN_API_KEY = "$2a$10$ZJ.4ymRIXZcZ3I7H1iMUzuK9AwmhmMoe68GeilrfF24kAIvjUiV9C";
+// config-nuvem.js - Configuração de Sincronização em Nuvem (Supabase)
+const SUPABASE_URL = "https://ayclwucigtoufybvmtll.supabase.co";
+const SUPABASE_KEY = "sb_publishable_uXpJrC1SkAXsyqLqxqdFZw_RvEsxLXy";
+
+// Inicializa o cliente do Supabase globalmente se a biblioteca estiver carregada
+const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 // Função para salvar dados na nuvem
 async function salvarDadosNaNuvem(dadosObjeto) {
+    if (!supabaseClient) {
+        console.error("Cliente Supabase não inicializado.");
+        return;
+    }
     try {
-        let resposta = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Master-Key': JSONBIN_API_KEY
-            },
-            body: JSON.stringify(dadosObjeto)
-        });
-        let resultado = await resposta.json();
-        console.log("Dados salvos na nuvem com sucesso!", resultado);
+        let { error } = await supabaseClient
+            .from('dados_sistema')
+            .upsert({ id: 'estado_geral', conteudo: dadosObjeto });
+
+        if (error) throw error;
+        console.log("Dados salvos na nuvem com sucesso!");
     } catch (erro) {
         console.error("Erro ao salvar na nuvem:", erro);
     }
@@ -22,21 +25,23 @@ async function salvarDadosNaNuvem(dadosObjeto) {
 
 // Função para carregar dados da nuvem
 async function carregarDadosDaNuvem() {
+    if (!supabaseClient) {
+        console.error("Cliente Supabase não inicializado.");
+        return null;
+    }
     try {
-        let resposta = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-            method: 'GET',
-            headers: {
-                'X-Master-Key': JSONBIN_API_KEY,
-                'Cache-Control': 'no-cache'
-            }
-        });
-        let resultado = await resposta.json();
-        
-        // Verifica se os dados vêm no formato de backup do localStorage
-        if (resultado && resultado.record) {
-            return resultado.record;
+        let { data, error } = await supabaseClient
+            .from('dados_sistema')
+            .select('*')
+            .eq('id', 'estado_geral')
+            .single();
+
+        if (error) throw error;
+
+        if (data && data.conteudo) {
+            return data.conteudo;
         }
-        return resultado;
+        return null;
     } catch (erro) {
         console.error("Erro ao carregar da nuvem:", erro);
         return null;
