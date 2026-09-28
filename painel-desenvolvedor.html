@@ -43,16 +43,13 @@
             <span id="dev-ultima-atualizacao" class="text-gray-500 text-[11px]">Última Sincronização: --</span>
         </div>
 
-        <!-- CARD DE GESTÃO DE NUVEM & ARMAZENAMENTO (SUPABASE) - ITEM 1 (Com exclusão por simulado) -->
+        <!-- CARD DE GESTÃO DE NUVEM & ARMAZENAMENTO (SUPABASE) -->
         <div class="bg-gray-50 border border-gray-200 p-5 rounded-xl mb-6 shadow-sm">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h3 class="font-bold text-gray-800 text-sm flex items-center gap-2">☁️ Gestão de Nuvem & Armazenamento (Supabase)</h3>
-                    <p class="text-xs text-gray-500 mt-0.5">Monitore o volume de dados sincronizados e remova um simulado específico do banco de dados.</p>
+                    <p class="text-xs text-gray-500 mt-0.5">Monitore o volume de dados sincronizados no banco de dados da nuvem.</p>
                 </div>
-                <button onclick="executarLimpezaSupabase()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow flex items-center gap-1.5">
-                    🗑️ Excluir Simulado Específico da Nuvem
-                </button>
             </div>
             
             <!-- Barra de Monitoramento -->
@@ -64,6 +61,15 @@
                 <div class="bg-gray-200 rounded-full h-2.5 w-full overflow-hidden">
                     <div id="barra-uso-storage" class="bg-emerald-500 h-2.5 w-0 transition-all duration-500"></div>
                 </div>
+            </div>
+        </div>
+
+        <!-- NOVO: LISTA VISUAL DOS SIMULADOS GRAVADOS NO DATABASE -->
+        <div class="bg-blue-50/50 border border-blue-200 p-5 rounded-xl mb-6 shadow-sm">
+            <h3 class="font-bold text-blue-900 text-sm mb-1 flex items-center gap-2">📚 Simulados Gravados no Database (Supabase)</h3>
+            <p class="text-xs text-gray-500 mb-3">Veja abaixo todos os simulados atualmente salvos na nuvem e gerencie-os individualmente:</p>
+            <div id="lista-simulados-nuvem" class="flex flex-wrap gap-3">
+                <span class="text-xs text-gray-400">Carregando simulados da nuvem...</span>
             </div>
         </div>
 
@@ -361,9 +367,10 @@
             carregarLogAuditoriaPDF();
             atualizarBadgeVersaoPainel();
             verificarStatusArmazenamentoSupabase();
+            carregarSimuladosDaNuvem(); // Carrega os simulados do Supabase ao iniciar
         };
 
-        // Monitoramento Supabase (tratado caso a tabela ainda não exista)
+        // Monitoramento e Listagem Supabase
         async function verificarStatusArmazenamentoSupabase() {
             try {
                 let { count, error } = await supabaseClient
@@ -380,31 +387,62 @@
                     document.getElementById('label-uso-storage').innerText = 'Aguardando primeira publicação';
                 }
             } catch (e) {
-                document.getElementById('label-uso-storage').innerText = 'Online (Tabela será criada ao publicar)';
+                document.getElementById('label-uso-storage').innerText = 'Online';
             }
         }
 
-        // Função de Limpeza Cirúrgica por Simulado Específico
-        async function executarLimpezaSupabase() {
-            let simuladoAlvo = prompt("🗑️ Qual o número do simulado você deseja excluir especificamente? (Ex: 1, 2, 3...)");
-            if (!simuladoAlvo || simuladoAlvo.trim() === "") {
-                alert("Operação cancelada.");
-                return;
-            }
+        // Função para carregar e exibir os simulados salvos no Database Supabase
+        async function carregarSimuladosDaNuvem() {
+            const container = document.getElementById("lista-simulados-nuvem");
+            try {
+                let { data, error } = await supabaseClient
+                    .from('dados_sistema')
+                    .select('conteudo')
+                    .eq('id', 'estado_geral')
+                    .single();
 
-            simuladoAlvo = simuladoAlvo.trim();
-            const conf1 = confirm(`⚠️ ATENÇÃO: Deseja realmente excluir todos os dados e configurações do ${simuladoAlvo}º Simulado deste ambiente v2?`);
+                if (error || !data || !data.conteudo) {
+                    container.innerHTML = `<span class="text-xs text-gray-400">Nenhum simulado sincronizado na nuvem ainda. Clique em "Salvar e Publicar na Nuvem".</span>`;
+                    return;
+                }
+
+                let conteudo = data.conteudo;
+                let simulados = JSON.parse(conteudo.lista_simulados_cadastrados || '["1"]');
+                
+                if (simulados.length === 0) {
+                    container.innerHTML = `<span class="text-xs text-gray-400">Nenhum simulado cadastrado na nuvem.</span>`;
+                    return;
+                }
+
+                let html = "";
+                simulados.forEach(s => {
+                    html += `
+                        <div class="flex items-center justify-between bg-white border border-blue-200 px-3 py-2 rounded-lg shadow-sm text-xs gap-4">
+                            <span class="font-bold text-blue-900">📌 ${s}º Simulado Salvo</span>
+                            <button onclick="excluirSimuladoDaNuvem('${s}')" class="bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded font-bold transition">🗑️ Excluir</button>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = `<span class="text-xs text-red-400">Erro ao consultar simulados na nuvem.</span>`;
+            }
+        }
+
+        // Excluir um simulado específico direto da nuvem e do painel
+        async function excluirSimuladoDaNuvem(simuladoAlvo) {
+            const conf1 = confirm(`⚠️ ATENÇÃO: Deseja realmente excluir o ${simuladoAlvo}º Simulado da nuvem (Supabase) e deste ambiente?`);
             if (!conf1) return;
 
             try {
-                // Remove os dados específicos daquele simulado do localStorage
+                // Remove do localStorage local
                 localStorage.removeItem(`dados_1dia_sim${simuladoAlvo}`);
                 localStorage.removeItem(`dados_2dia_sim${simuladoAlvo}`);
                 localStorage.removeItem(`notas_redacao_sim${simuladoAlvo}`);
                 localStorage.removeItem(`config_areas_sim${simuladoAlvo}`);
                 localStorage.removeItem(`pre_calculo_alunos_sim_${simuladoAlvo}`);
 
-                // Atualiza a lista de simulados cadastrados removendo o alvo
                 let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1"]');
                 simuladosSalvos = simuladosSalvos.filter(s => s !== simuladoAlvo);
                 if (simuladosSalvos.length === 0) simuladosSalvos = ["1"];
@@ -414,7 +452,7 @@
                     simAtual = simuladosSalvos[0];
                 }
 
-                // Sincroniza a remoção com a nuvem do Supabase automaticamente
+                // Sincroniza a exclusão atualizando o Supabase
                 let dadosBackup = {};
                 for(let i = 0; i < localStorage.length; i++) {
                     let key = localStorage.key(i);
@@ -431,19 +469,18 @@
                         atualizado_em: new Date() 
                     });
 
-                if (error) {
-                    console.warn("Aviso na nuvem:", error.message);
-                }
+                if (error) throw error;
 
-                alert(`✅ O ${simuladoAlvo}º Simulado foi excluído com sucesso do painel e da nuvem!`);
+                alert(`✅ O ${simuladoAlvo}º Simulado foi excluído com sucesso do database!`);
                 
                 carregarListaSimulados();
                 mudarEdicaoSimulado();
+                carregarSimuladosDaNuvem();
                 verificarStatusArmazenamentoSupabase();
 
             } catch (err) {
                 console.error(err);
-                alert("❌ Erro ao limpar o simulado: " + err.message);
+                alert("❌ Erro ao excluir o simulado: " + err.message);
             }
         }
 
@@ -763,6 +800,7 @@
                 setTimeout(() => document.getElementById("msg-sucesso").classList.add("hidden"), 5000);
                 atualizarBadgeVersaoPainel();
                 verificarStatusArmazenamentoSupabase();
+                carregarSimuladosDaNuvem(); // Atualiza a lista visual da nuvem
                 alert("🚀 Salvo na nuvem do Supabase com sucesso!");
             } catch (err) {
                 console.error(err);
