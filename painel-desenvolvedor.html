@@ -43,12 +43,12 @@
             <span id="dev-ultima-atualizacao" class="text-gray-500 text-[11px]">Última Sincronização: --</span>
         </div>
 
-        <!-- CARD DE GESTÃO DE NUVEM & ARMAZENAMENTO (SUPABASE) -->
+        <!-- CARD DE GESTÃO DE NUVEM & ARMAZENAMENTO (SUPABASE) COM GAVETA DE EXCLUSÃO SELETIVA -->
         <div class="bg-gray-50 border border-gray-200 p-5 rounded-xl mb-6 shadow-sm">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h3 class="font-bold text-gray-800 text-sm flex items-center gap-2">☁️ Gestão de Nuvem & Armazenamento (Supabase)</h3>
-                    <p class="text-xs text-gray-500 mt-0.5">Monitore o volume de dados sincronizados no banco de dados da nuvem.</p>
+                    <p class="text-xs text-gray-500 mt-0.5">Monitore o volume de dados sincronizados e gerencie os simulados salvos na nuvem.</p>
                 </div>
             </div>
             
@@ -62,14 +62,26 @@
                     <div id="barra-uso-storage" class="bg-emerald-500 h-2.5 w-0 transition-all duration-500"></div>
                 </div>
             </div>
-        </div>
 
-        <!-- NOVO: LISTA VISUAL DOS SIMULADOS GRAVADOS NO DATABASE -->
-        <div class="bg-blue-50/50 border border-blue-200 p-5 rounded-xl mb-6 shadow-sm">
-            <h3 class="font-bold text-blue-900 text-sm mb-1 flex items-center gap-2">📚 Simulados Gravados no Database (Supabase)</h3>
-            <p class="text-xs text-gray-500 mb-3">Veja abaixo todos os simulados atualmente salvos na nuvem e gerencie-os individualmente:</p>
-            <div id="lista-simulados-nuvem" class="flex flex-wrap gap-3">
-                <span class="text-xs text-gray-400">Carregando simulados da nuvem...</span>
+            <!-- GAVETA DE EXCLUSÃO DE SIMULADOS DA NUVEM (COM SELECT IGUAL AO MODELO) -->
+            <div class="mt-4 pt-3 border-t border-gray-200">
+                <details class="group">
+                    <summary class="flex justify-between items-center cursor-pointer font-bold text-gray-700 text-xs select-none bg-blue-50/70 p-3 rounded-lg border border-blue-200 hover:bg-blue-100/50 transition">
+                        <span class="flex items-center gap-2 text-blue-900">🗑️ Gerenciar e Excluir Simulados Específicos da Nuvem</span>
+                        <span class="seta-gaveta text-base font-mono text-blue-700">▼</span>
+                    </summary>
+                    <div class="p-4 bg-white border border-blue-200 rounded-b-lg mt-1 space-y-3">
+                        <p class="text-xs text-gray-500">Selecione abaixo o simulado gravado no database que deseja remover permanentemente da nuvem:</p>
+                        <div class="flex flex-col md:flex-row items-center gap-3">
+                            <select id="select-simulado-nuvem" class="px-4 py-2 border border-blue-300 rounded-lg font-bold text-blue-700 bg-white shadow-sm flex-1 w-full text-xs">
+                                <option value="">Carregando simulados do database...</option>
+                            </select>
+                            <button onclick="excluirSimuladoSelecionadoNuvem()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow flex items-center gap-1.5 w-full md:w-auto justify-center">
+                                🗑️ Excluir Simulado Selecionado
+                            </button>
+                        </div>
+                    </div>
+                </details>
             </div>
         </div>
 
@@ -367,10 +379,10 @@
             carregarLogAuditoriaPDF();
             atualizarBadgeVersaoPainel();
             verificarStatusArmazenamentoSupabase();
-            carregarSimuladosDaNuvem(); // Carrega os simulados do Supabase ao iniciar
+            carregarSimuladosSelectNuvem(); // Carrega os simulados no select da gaveta da nuvem
         };
 
-        // Monitoramento e Listagem Supabase
+        // Monitoramento Supabase
         async function verificarStatusArmazenamentoSupabase() {
             try {
                 let { count, error } = await supabaseClient
@@ -391,9 +403,9 @@
             }
         }
 
-        // Função para carregar e exibir os simulados salvos no Database Supabase
-        async function carregarSimuladosDaNuvem() {
-            const container = document.getElementById("lista-simulados-nuvem");
+        // Carrega os simulados da nuvem no select da gaveta
+        async function carregarSimuladosSelectNuvem() {
+            const selectNuvem = document.getElementById("select-simulado-nuvem");
             try {
                 let { data, error } = await supabaseClient
                     .from('dados_sistema')
@@ -402,41 +414,41 @@
                     .single();
 
                 if (error || !data || !data.conteudo) {
-                    container.innerHTML = `<span class="text-xs text-gray-400">Nenhum simulado sincronizado na nuvem ainda. Clique em "Salvar e Publicar na Nuvem".</span>`;
+                    selectNuvem.innerHTML = `<option value="">Nenhum simulado na nuvem</option>`;
                     return;
                 }
 
                 let conteudo = data.conteudo;
                 let simulados = JSON.parse(conteudo.lista_simulados_cadastrados || '["1"]');
                 
-                if (simulados.length === 0) {
-                    container.innerHTML = `<span class="text-xs text-gray-400">Nenhum simulado cadastrado na nuvem.</span>`;
-                    return;
-                }
-
-                let html = "";
+                selectNuvem.innerHTML = "";
                 simulados.forEach(s => {
-                    html += `
-                        <div class="flex items-center justify-between bg-white border border-blue-200 px-3 py-2 rounded-lg shadow-sm text-xs gap-4">
-                            <span class="font-bold text-blue-900">📌 ${s}º Simulado Salvo</span>
-                            <button onclick="excluirSimuladoDaNuvem('${s}')" class="bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded font-bold transition">🗑️ Excluir</button>
-                        </div>
-                    `;
+                    let opt = document.createElement("option");
+                    opt.value = s;
+                    opt.innerText = `${s}º Simulado`;
+                    selectNuvem.appendChild(opt);
                 });
-                container.innerHTML = html;
             } catch (e) {
                 console.error(e);
-                container.innerHTML = `<span class="text-xs text-red-400">Erro ao consultar simulados na nuvem.</span>`;
+                selectNuvem.innerHTML = `<option value="">Erro ao carregar do database</option>`;
             }
         }
 
-        // Excluir um simulado específico direto da nuvem e do painel
-        async function excluirSimuladoDaNuvem(simuladoAlvo) {
-            const conf1 = confirm(`⚠️ ATENÇÃO: Deseja realmente excluir o ${simuladoAlvo}º Simulado da nuvem (Supabase) e deste ambiente?`);
+        // Excluir o simulado selecionado na gaveta da nuvem
+        async function excluirSimuladoSelecionadoNuvem() {
+            const selectNuvem = document.getElementById("select-simulado-nuvem");
+            let simuladoAlvo = selectNuvem.value;
+
+            if (!simuladoAlvo) {
+                alert("Nenhum simulado selecionado.");
+                return;
+            }
+
+            const conf1 = confirm(`⚠️ ATENÇÃO: Deseja realmente excluir o ${simuladoAlvo}º Simulado do database da nuvem (Supabase) e do painel?`);
             if (!conf1) return;
 
             try {
-                // Remove do localStorage local
+                // Remove localmente
                 localStorage.removeItem(`dados_1dia_sim${simuladoAlvo}`);
                 localStorage.removeItem(`dados_2dia_sim${simuladoAlvo}`);
                 localStorage.removeItem(`notas_redacao_sim${simuladoAlvo}`);
@@ -452,7 +464,7 @@
                     simAtual = simuladosSalvos[0];
                 }
 
-                // Sincroniza a exclusão atualizando o Supabase
+                // Atualiza o Supabase
                 let dadosBackup = {};
                 for(let i = 0; i < localStorage.length; i++) {
                     let key = localStorage.key(i);
@@ -471,11 +483,11 @@
 
                 if (error) throw error;
 
-                alert(`✅ O ${simuladoAlvo}º Simulado foi excluído com sucesso do database!`);
+                alert(`✅ O ${simuladoAlvo}º Simulado foi excluído com sucesso do database e da nuvem!`);
                 
                 carregarListaSimulados();
                 mudarEdicaoSimulado();
-                carregarSimuladosDaNuvem();
+                carregarSimuladosSelectNuvem();
                 verificarStatusArmazenamentoSupabase();
 
             } catch (err) {
@@ -800,7 +812,7 @@
                 setTimeout(() => document.getElementById("msg-sucesso").classList.add("hidden"), 5000);
                 atualizarBadgeVersaoPainel();
                 verificarStatusArmazenamentoSupabase();
-                carregarSimuladosDaNuvem(); // Atualiza a lista visual da nuvem
+                carregarSimuladosSelectNuvem(); // Atualiza o seletor da nuvem
                 alert("🚀 Salvo na nuvem do Supabase com sucesso!");
             } catch (err) {
                 console.error(err);
