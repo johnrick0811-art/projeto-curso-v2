@@ -26,11 +26,17 @@ async function carregarDadosDaNuvem() {
         let resposta = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
             method: 'GET',
             headers: {
-                'X-Master-Key': JSONBIN_API_KEY
+                'X-Master-Key': JSONBIN_API_KEY,
+                'Cache-Control': 'no-cache'
             }
         });
         let resultado = await resposta.json();
-        return resultado.record; // Retorna o objeto completo salvo no Bin
+        
+        // Verifica se os dados vêm no formato de backup do localStorage
+        if (resultado && resultado.record) {
+            return resultado.record;
+        }
+        return resultado;
     } catch (erro) {
         console.error("Erro ao carregar da nuvem:", erro);
         return null;
